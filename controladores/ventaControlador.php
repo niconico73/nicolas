@@ -1692,8 +1692,7 @@ error_reporting(E_ALL);
             /*== Recuperando el codigo de la venta y monto ==*/
             $venta_codigo=mainModel::limpiar_cadena($_POST['pago_codigo_reg']);
             $pago_monto=mainModel::limpiar_cadena($_POST['pago_monto_reg']);
-            $metodo_pago = mainModel::limpiar_cadena($_POST['metodo_pago']);
-            $banco = mainModel::limpiar_cadena($_POST['banco']);
+            $pago_banco = mainModel::limpiar_cadena($_POST['banco']); // Obtener directamente el valor del botón de radio
             $num_operacion = mainModel::limpiar_cadena($_POST['num_operacion']);
 
 
@@ -1807,13 +1806,9 @@ error_reporting(E_ALL);
                     "campo_marcador"=>":Caja",
                     "campo_valor"=>$_SESSION['caja_svi']
                 ],
-                "pago_metodo" => [ // Cambiamos el nombre del campo
-                    "campo_marcador" => ":MetodoPago",
-                    "campo_valor" => $metodo_pago
-                ],
                 "pago_banco" => [
                     "campo_marcador" => ":Banco",
-                    "campo_valor" => $banco
+                    "campo_valor" => $pago_banco // Usar directamente el valor del botón de radio
                 ],
                 "pago_numero_operacion" => [
                     "campo_marcador" => ":NumOperacion",
