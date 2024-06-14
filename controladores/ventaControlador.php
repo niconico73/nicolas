@@ -1785,35 +1785,14 @@ error_reporting(E_ALL);
             $pago_hora=date("h:i a");
 
             /*== Preparando datos para enviarlos al modelo ==*/
-            $datos_pago=[
-                "pago_fecha"=>[
-                    "campo_marcador"=>":Fecha",
-                    "campo_valor"=>$pago_fecha
-                ],
-                "pago_monto"=>[
-                    "campo_marcador"=>":Monto",
-                    "campo_valor"=>$movimiento_cantidad
-                ],
-                "venta_codigo"=>[
-                    "campo_marcador"=>":Codigo",
-                    "campo_valor"=>$venta_codigo
-                ],
-                "usuario_id"=>[
-                    "campo_marcador"=>":Usuario",
-                    "campo_valor"=>$_SESSION['id_svi']
-                ],
-                "caja_id"=>[
-                    "campo_marcador"=>":Caja",
-                    "campo_valor"=>$_SESSION['caja_svi']
-                ],
-                "pago_banco" => [
-                    "campo_marcador" => ":Banco",
-                    "campo_valor" => $pago_banco // Usar directamente el valor del botón de radio
-                ],
-                "pago_numero_operacion" => [
-                    "campo_marcador" => ":NumOperacion",
-                    "campo_valor" => $num_operacion
-                ]
+            $datos_pago = [
+                "pago_fecha" => $pago_fecha,
+                "pago_monto" => $movimiento_cantidad,
+                "venta_codigo" => $venta_codigo,
+                "usuario_id" => $_SESSION['id_svi'],
+                "caja_id" => $_SESSION['caja_svi'],
+                "pago_banco" => $pago_banco,
+                "pago_numero_operacion" => $num_operacion
             ];
             $sql = "INSERT INTO pago (";
             $marcadores = "";

@@ -34,40 +34,28 @@
 
 
 		/*----------  Funcion para ejecutar una consulta INSERT preparada  ----------*/
-		protected static function guardar_datos($tabla,$datos){
-			$query="INSERT INTO $tabla (";
-			$C=0;
-			foreach ($datos as $campo => $indice){
-				if($C<=0){
-					$query.=$campo;
-				}else{
-					$query.=",".$campo;
-				}
-				$C++;
-			}
+		protected static function guardar_datos($tabla, $datos)
+{
+    $sql = "INSERT INTO $tabla (";
+    $columnas = "";
+    $valores = "";
 
-			$query.=") VALUES(";
-			$Z=0;
-			foreach ($datos as $campo => $indice){
-				if($Z<=0){
-					$query.=$indice["campo_marcador"];
-				}else{
-					$query.=",".$indice["campo_marcador"];
-				}
-				$Z++;
-			}
+    foreach ($datos as $campo => $valor) {
+        $columnas .= $campo . ",";
+        $valores .= "?,"; // Usamos marcadores de posición ?
+    }
 
-			$query.=")";
-			$sql=self::conectar()->prepare($query);
+    $sql = rtrim($sql, ",") . ") VALUES (" . rtrim($valores, ",") . ")";
 
-			foreach ($datos as $campo => $indice){
-				$sql->bindParam($indice["campo_marcador"],$indice["campo_valor"]);
-			}
-
-			$sql->execute();
-
-			return $sql;
-		} /*-- Fin Funcion --*/
+    try {
+        $query = self::conectar()->prepare($sql);
+        $query->execute(array_values($datos)); // Pasamos los valores directamente
+        return $query;
+    } catch (PDOException $e) {
+        // Manejar el error aquí (registrarlo, mostrarlo al usuario, etc.)
+        return false;
+    }
+} /*-- Fin Funcion --*/
 
 
 		/*---------- Funcion datos tabla ----------*/
