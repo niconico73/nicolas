@@ -1,241 +1,117 @@
 <?php
-	
-	$peticion_ajax=true;
-	$code=(isset($_GET['code'])) ? $_GET['code'] : 0;
 
-	/*---------- Incluyendo configuraciones ----------*/
-	require_once "../config/APP.php";
+$peticion_ajax = true;
+$code = (isset($_GET['code'])) ? $_GET['code'] : 0;
 
-	/*---------- Instancia al controlador venta ----------*/
-	require_once "../controladores/ventaControlador.php";
-	$ins_venta = new ventaControlador();
+/*---------- Incluyendo configuraciones ----------*/
+require_once "../config/APP.php";
 
-	$datos_venta=$ins_venta->datos_tabla("Normal","venta INNER JOIN cliente ON venta.cliente_id=cliente.cliente_id INNER JOIN usuario ON venta.usuario_id=usuario.usuario_id INNER JOIN caja ON venta.caja_id=caja.caja_id WHERE (venta_codigo='$code')","*",0);
+/*---------- Instancia al controlador venta ----------*/
+require_once "../controladores/ventaControlador.php";
+$ins_venta = new ventaControlador();
 
-	if($datos_venta->rowCount()==1){
+$datos_venta = $ins_venta->datos_tabla("Normal", "venta INNER JOIN cliente ON venta.cliente_id=cliente.cliente_id INNER JOIN usuario ON venta.usuario_id=usuario.usuario_id WHERE (venta_codigo='$code')", "*", 0);
 
-		/*---------- Datos de la venta ----------*/
-		$datos_venta=$datos_venta->fetch();
+if ($datos_venta->rowCount() == 1) {
 
-		/*---------- Seleccion de datos de la empresa ----------*/
-		$datos_empresa=$ins_venta->datos_tabla("Normal","empresa LIMIT 1","*",0);
-		$datos_empresa=$datos_empresa->fetch();
+    /*---------- Datos de la venta ----------*/
+    $datos_venta = $datos_venta->fetch();
 
+    /*---------- Seleccion de datos de la empresa ----------*/
+    $datos_empresa = $ins_venta->datos_tabla("Normal", "empresa LIMIT 1", "*", 0);
 
-		require "./code128.php";
+    $datos_empresa = $datos_empresa->fetch();
 
-		$pdf = new PDF_Code128('P','mm','Letter');
-		$pdf->SetMargins(17,17,17);
-		$pdf->AddPage();
-		$pdf->Image(SERVERURL.'vistas/assets/img/logo.png',165,12,35,35,'PNG');
+    // ***** INICIO INTEGRACIÓN NUBEFACT *****
 
-		$pdf->SetFont('Arial','B',16);
-		$pdf->SetTextColor(0,0,0); // Cambiado a negro
-$pdf->Cell(150,10,iconv("UTF-8", "ISO-8859-1",strtoupper($datos_empresa['empresa_nombre'])),0,0,'L');
+    // RUTA para enviar documentos
+    $ruta = "https://api.nubefact.com/api/v1/ee3e84f1-8ee6-4ad9-a0d9-2ad2c62bdcb7";
 
-		$pdf->Ln(9);
+    //TOKEN para enviar documentos
+    $token = "07f66bd825c1498e9bb4eabc7645f3c371c1af7e9a244d8bbbebb14155a1219c";
 
-		$pdf->SetFont('Arial','',10);
-		$pdf->SetTextColor(39,39,51);
-		$pdf->Cell(150,9,iconv("UTF-8", "ISO-8859-1",$datos_empresa['empresa_tipo_documento'].": ".$datos_empresa['empresa_numero_documento']),0,0,'L');
+    $data = array(
+        "operacion"                    => "generar_comprobante",
+        "tipo_de_comprobante"          => "1",
+        "serie"                        => "FFF1",
+        "numero"                       => $datos_venta['venta_id'],
+        "sunat_transaction"            => "1",
+        "cliente_tipo_de_documento"    => $datos_venta['cliente_tipo_documento'],
+        "cliente_numero_de_documento"  => $datos_venta['cliente_numero_documento'],
+        "cliente_denominacion"         => $datos_venta['cliente_nombre'] . ' ' . $datos_venta['cliente_apellido'],
+        "cliente_direccion"            => $datos_venta['cliente_direccion'],
+        "fecha_de_emision"             => date('Y-m-d', strtotime($datos_venta['venta_fecha'])),
+        "moneda"                       => "1",
+        "porcentaje_de_igv"            => "18.00",
+        "total_gravada"                => $datos_venta['venta_subtotal'],
+        "total_igv"                    => $datos_venta['venta_impuestos'],
+        "total"                        => $datos_venta['venta_total_final'],
+        "enviar_automaticamente_a_la_sunat" => "true",
+        "items" => array() 
+    );
 
-		$pdf->Ln(5);
+    // Datos de los items (productos o servicios)
+    $venta_detalle = $ins_venta->datos_tabla("Normal", "venta_detalle WHERE venta_codigo='" . $datos_venta['venta_codigo'] . "'", "*", 0);
+    $venta_detalle = $venta_detalle->fetchAll();
 
-		$pdf->Cell(150,9,iconv("UTF-8", "ISO-8859-1",$datos_empresa['empresa_direccion']),0,0,'L');
+    foreach ($venta_detalle as $detalle) {
+        $valor_unitario = $detalle['venta_detalle_precio_venta'] / 1.18;
+        $subtotal = $valor_unitario * $detalle['venta_detalle_cantidad'];
+        $igv = $subtotal * 0.18;
 
-		$pdf->Ln(5);
+        $data['items'][] = [
+            "unidad_de_medida" => "NIU",
+            "descripcion" => $detalle['venta_detalle_descripcion'],
+            "cantidad" => $detalle['venta_detalle_cantidad'],
+            "valor_unitario" => number_format($valor_unitario, 2, '.', ''),
+            "precio_unitario" => number_format($detalle['venta_detalle_precio_venta'], 2, '.', ''),
+            "subtotal" => number_format($subtotal, 2, '.', ''),
+            "tipo_de_igv" => 1, // Asumiendo que todos los productos son gravados
+            "igv" => number_format($igv, 2, '.', ''),
+            "total" => number_format($detalle['venta_detalle_total'], 2, '.', ''),
+            "anticipo_regularizacion" => "false"
+        ];
+    }
 
-		$pdf->Cell(150,9,iconv("UTF-8", "ISO-8859-1","Teléfono: ".$datos_empresa['empresa_telefono']),0,0,'L');
+    $data_json = json_encode($data);
 
-		$pdf->Ln(5);
+    //Invocamos el servicio de NUBEFACT
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $ruta);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+        'Authorization: Token token="' . $token . '"',
+        'Content-Type: application/json',
+    ));
+    curl_setopt($ch, CURLOPT_POST, 1);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, $data_json);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    $respuesta = curl_exec($ch);
+    curl_close($ch);
 
-		$pdf->Cell(150,9,iconv("UTF-8", "ISO-8859-1","Email: ".$datos_empresa['empresa_email']),0,0,'L');
+ // ***** FIN INTEGRACIÓN NUBEFACT *****
 
-		$pdf->Ln(10);
+ $leer_respuesta = json_decode($respuesta, true);
+ if (isset($leer_respuesta['errors'])) {
+     // Mostramos los errores si los hay
+     echo "Error al generar la factura: " . $leer_respuesta['errors'];
+ } else {
+     // Factura generada con éxito
+     $enlace_pdf = $leer_respuesta['enlace_del_pdf'];
+     $enlace_xml = $leer_respuesta['enlace_del_xml'];
 
-		$pdf->SetFont('Arial','',10);
-		$pdf->Cell(30,7,iconv("UTF-8", "ISO-8859-1",'Fecha de emisión:'),0,0);
-		$pdf->SetTextColor(97,97,97);
-		$pdf->Cell(116,7,iconv("UTF-8", "ISO-8859-1",date("d/m/Y", strtotime($datos_venta['venta_fecha']))." ".$datos_venta['venta_hora']),0,0,'L');
-		$pdf->SetFont('Arial','B',10);
-		$pdf->SetTextColor(39,39,51);
-		$pdf->Cell(35,7,iconv("UTF-8", "ISO-8859-1",strtoupper('Factura Nro.')),0,0,'C');
+     echo "<div class='alert alert-success' role='alert'>Factura generada con éxito. Enlace al PDF: <a href='$enlace_pdf' target='_blank'>Descargar PDF</a></div>";
 
-		$pdf->Ln(7);
+     // Mostrar respuesta de NubeFacT en una tabla HTML
+     echo "<h2>RESPUESTA DE SUNAT</h2>";
+     echo "<table border='1' style='border-collapse: collapse'><tbody>";
+     foreach ($leer_respuesta as $clave => $valor) {
+         echo "<tr><th>$clave:</th><td>$valor</td></tr>";
+     }
+     echo "</tbody></table>";
 
-		$pdf->SetFont('Arial','',10);
-		$pdf->Cell(12,7,iconv("UTF-8", "ISO-8859-1",'Cajero:'),0,0,'L');
-		$pdf->SetTextColor(97,97,97);
-		$pdf->Cell(134,7,iconv("UTF-8", "ISO-8859-1",$datos_venta['usuario_nombre']." ".$datos_venta['usuario_apellido']),0,0,'L');
-		$pdf->SetFont('Arial','B',10);
-		$pdf->SetTextColor(97,97,97);
-		$pdf->Cell(35,7,iconv("UTF-8", "ISO-8859-1",strtoupper($datos_venta['venta_id'])),0,0,'C');
-
-		$pdf->Ln(10);
-
-		if($datos_venta['cliente_id']==1){
-			$pdf->SetFont('Arial','',10);
-			$pdf->SetTextColor(39,39,51);
-			$pdf->Cell(13,7,iconv("UTF-8", "ISO-8859-1",'Cliente:'),0,0);
-			$pdf->SetTextColor(97,97,97);
-			$pdf->Cell(60,7,iconv("UTF-8", "ISO-8859-1","N/A"),0,0,'L');
-			$pdf->SetTextColor(39,39,51);
-			$pdf->Cell(8,7,iconv("UTF-8", "ISO-8859-1","Doc: "),0,0,'L');
-			$pdf->SetTextColor(97,97,97);
-			$pdf->Cell(60,7,iconv("UTF-8", "ISO-8859-1","N/A"),0,0,'L');
-			$pdf->SetTextColor(39,39,51);
-			$pdf->Cell(7,7,iconv("UTF-8", "ISO-8859-1",'Tel:'),0,0,'L');
-			$pdf->SetTextColor(97,97,97);
-			$pdf->Cell(35,7,iconv("UTF-8", "ISO-8859-1","N/A"),0,0);
-			$pdf->SetTextColor(39,39,51);
-
-			$pdf->Ln(7);
-
-			$pdf->SetTextColor(39,39,51);
-			$pdf->Cell(6,7,iconv("UTF-8", "ISO-8859-1",'Dir:'),0,0);
-			$pdf->SetTextColor(97,97,97);
-			$pdf->Cell(109,7,iconv("UTF-8", "ISO-8859-1","N/A"),0,0);
-		}else{
-			$pdf->SetFont('Arial','',10);
-			$pdf->SetTextColor(39,39,51);
-			$pdf->Cell(13,7,iconv("UTF-8", "ISO-8859-1",'Cliente:'),0,0);
-			$pdf->SetTextColor(97,97,97);
-			$pdf->Cell(60,7,iconv("UTF-8", "ISO-8859-1",$datos_venta['cliente_nombre']." ".$datos_venta['cliente_apellido']),0,0,'L');
-			$pdf->SetTextColor(39,39,51);
-			$pdf->Cell(8,7,iconv("UTF-8", "ISO-8859-1","Doc: "),0,0,'L');
-			$pdf->SetTextColor(97,97,97);
-			$pdf->Cell(60,7,iconv("UTF-8", "ISO-8859-1",$datos_venta['cliente_tipo_documento']." ".$datos_venta['cliente_numero_documento']),0,0,'L');
-			$pdf->SetTextColor(39,39,51);
-			$pdf->Cell(7,7,iconv("UTF-8", "ISO-8859-1",'Tel:'),0,0,'L');
-			$pdf->SetTextColor(97,97,97);
-			$pdf->Cell(35,7,iconv("UTF-8", "ISO-8859-1",$datos_venta['cliente_telefono']),0,0);
-			$pdf->SetTextColor(39,39,51);
-
-			$pdf->Ln(7);
-
-			$pdf->SetTextColor(39,39,51);
-			$pdf->Cell(6,7,iconv("UTF-8", "ISO-8859-1",'Dir:'),0,0);
-			$pdf->SetTextColor(97,97,97);
-			$pdf->Cell(109,7,iconv("UTF-8", "ISO-8859-1",$datos_venta['cliente_provincia'].", ".$datos_venta['cliente_ciudad'].", ".$datos_venta['cliente_direccion']),0,0);
-		}
-
-		$pdf->Ln(9);
-
-		$pdf->SetFillColor(0,0,0);
-		$pdf->SetDrawColor(0,0,0);
-		$pdf->SetTextColor(255,255,255);
-		$pdf->Cell(100,8,iconv("UTF-8", "ISO-8859-1",'Descripción'),1,0,'C',true);
-		$pdf->Cell(15,8,iconv("UTF-8", "ISO-8859-1",'Cant.'),1,0,'C',true);
-		$pdf->Cell(32,8,iconv("UTF-8", "ISO-8859-1",'Precio'),1,0,'C',true);
-		$pdf->Cell(34,8,iconv("UTF-8", "ISO-8859-1",'Subtotal'),1,0,'C',true);
-
-		$pdf->Ln(8);
-
-		$pdf->SetFont('Arial','',9);
-		$pdf->SetTextColor(39,39,51);
-
-		/*----------  Seleccionando detalles de la venta  ----------*/
-		$venta_detalle=$ins_venta->datos_tabla("Normal","venta_detalle WHERE venta_codigo='".$datos_venta['venta_codigo']."'","*",0);
-		$venta_detalle=$venta_detalle->fetchAll();
-
-		foreach($venta_detalle as $detalle){
-			if($detalle['venta_detalle_garantia']!="N/A"){
-				$garantia_fabrica=" - Garantía: ".$detalle['venta_detalle_garantia'];
-				$limite_caracteres=40;
-			}else{
-				$garantia_fabrica="";
-				$limite_caracteres=60;
-			}
-			$pdf->Cell(100,7,iconv("UTF-8", "ISO-8859-1",$ins_venta->limitar_cadena($detalle['venta_detalle_descripcion'],$limite_caracteres,"...").$garantia_fabrica),'L',0,'C');
-			$pdf->Cell(15,7,iconv("UTF-8", "ISO-8859-1",$detalle['venta_detalle_cantidad']),'L',0,'C');
-			$pdf->Cell(32,7,iconv("UTF-8", "ISO-8859-1",MONEDA_SIMBOLO.number_format($detalle['venta_detalle_precio_venta'],MONEDA_DECIMALES,MONEDA_SEPARADOR_DECIMAL,MONEDA_SEPARADOR_MILLAR)),'L',0,'C');
-			$pdf->Cell(34,7,iconv("UTF-8", "ISO-8859-1",MONEDA_SIMBOLO.number_format($detalle['venta_detalle_total'],MONEDA_DECIMALES,MONEDA_SEPARADOR_DECIMAL,MONEDA_SEPARADOR_MILLAR)),'LR',0,'C');
-			$pdf->Ln(7);
-		}
-
-		$pdf->SetFont('Arial','B',9);
-		
-		if($datos_empresa['empresa_factura_impuestos']=="Si"){
-			$pdf->Cell(100,7,iconv("UTF-8", "ISO-8859-1",''),'T',0,'C');
-			$pdf->Cell(15,7,iconv("UTF-8", "ISO-8859-1",''),'T',0,'C');
-			$pdf->Cell(32,7,iconv("UTF-8", "ISO-8859-1",'SUBTOTAL'),'T',0,'C');
-			$pdf->Cell(34,7,iconv("UTF-8", "ISO-8859-1","+ ".MONEDA_SIMBOLO.number_format($datos_venta['venta_subtotal'],MONEDA_DECIMALES,MONEDA_SEPARADOR_DECIMAL,MONEDA_SEPARADOR_MILLAR)),'T',0,'C');
-
-			$pdf->Ln(7);
-
-			$pdf->Cell(100,7,iconv("UTF-8", "ISO-8859-1",''),'',0,'C');
-			$pdf->Cell(15,7,iconv("UTF-8", "ISO-8859-1",''),'',0,'C');
-			$pdf->Cell(32,7,iconv("UTF-8", "ISO-8859-1",$datos_venta['venta_impuesto_nombre']." (".$datos_venta['venta_impuesto_porcentaje']."%)"),'',0,'C');
-			$pdf->Cell(34,7,iconv("UTF-8", "ISO-8859-1","+ ".MONEDA_SIMBOLO.number_format($datos_venta['venta_impuestos'],MONEDA_DECIMALES,MONEDA_SEPARADOR_DECIMAL,MONEDA_SEPARADOR_MILLAR)),'',0,'C');
-
-			$pdf->Ln(7);
-
-			$pdf->Cell(100,7,iconv("UTF-8", "ISO-8859-1",''),'',0,'C');
-			$pdf->Cell(15,7,iconv("UTF-8", "ISO-8859-1",''),'',0,'C');
-		}else{
-			$pdf->Cell(100,7,iconv("UTF-8", "ISO-8859-1",''),'T',0,'C');
-			$pdf->Cell(15,7,iconv("UTF-8", "ISO-8859-1",''),'T',0,'C');
-		}
-
-
-		$pdf->Cell(32,7,iconv("UTF-8", "ISO-8859-1",'TOTAL A PAGAR'),'T',0,'C');
-		$pdf->Cell(34,7,iconv("UTF-8", "ISO-8859-1",MONEDA_SIMBOLO.number_format($datos_venta['venta_total_final'],MONEDA_DECIMALES,MONEDA_SEPARADOR_DECIMAL,MONEDA_SEPARADOR_MILLAR).' '.MONEDA_NOMBRE),'T',0,'C');
-
-		$pdf->Ln(7);
-
-		$pdf->Cell(100,7,iconv("UTF-8", "ISO-8859-1",''),'',0,'C');
-		$pdf->Cell(15,7,iconv("UTF-8", "ISO-8859-1",''),'',0,'C');
-		$pdf->Cell(32,7,iconv("UTF-8", "ISO-8859-1",'TOTAL PAGADO'),'',0,'C');
-		$pdf->Cell(34,7,iconv("UTF-8", "ISO-8859-1",MONEDA_SIMBOLO.number_format($datos_venta['venta_pagado'],MONEDA_DECIMALES,MONEDA_SEPARADOR_DECIMAL,MONEDA_SEPARADOR_MILLAR).' '.MONEDA_NOMBRE),'',0,'C');
-
-		$pdf->Ln(7);
-
-		$pdf->Cell(100,7,iconv("UTF-8", "ISO-8859-1",''),'',0,'C');
-		$pdf->Cell(15,7,iconv("UTF-8", "ISO-8859-1",''),'',0,'C');
-		$pdf->Cell(32,7,iconv("UTF-8", "ISO-8859-1",'CAMBIO'),'',0,'C');
-		$pdf->Cell(34,7,iconv("UTF-8", "ISO-8859-1",MONEDA_SIMBOLO.number_format($datos_venta['venta_cambio'],MONEDA_DECIMALES,MONEDA_SEPARADOR_DECIMAL,MONEDA_SEPARADOR_MILLAR).' '.MONEDA_NOMBRE),'',0,'C');
-
-		$pdf->Ln(12);
-
-		$pdf->SetFont('Arial','',9);
-		if($datos_venta['venta_pagado']<$datos_venta['venta_total_final'] && $datos_venta['venta_tipo']="Credito"){
-			$pdf->SetTextColor(97,97,97);
-			$pdf->MultiCell(0,9,iconv("UTF-8", "ISO-8859-1","NOTA IMPORTANTE: Esta factura presenta un saldo pendiente de pago por la cantidad de ".MONEDA_SIMBOLO.number_format(($datos_venta['venta_total_final']-$datos_venta['venta_pagado']),MONEDA_DECIMALES,MONEDA_SEPARADOR_DECIMAL,MONEDA_SEPARADOR_MILLAR).' '.MONEDA_NOMBRE),0,'C',false);
-		}
-
-		$pdf->SetTextColor(39,39,51);
-		$pdf->MultiCell(0,9,iconv("UTF-8", "ISO-8859-1","*** Precios de productos incluyen impuestos. Para poder realizar un reclamo o devolución debe de presentar esta factura ***"),0,'C',false);
-
-		$pdf->Ln(9);
-
-		$pdf->SetFillColor(39,39,51);
-		$pdf->SetDrawColor(23,83,201);
-        $pdf->Code128(72,$pdf->GetY(),$datos_venta['venta_codigo'],70,20);
-        $pdf->SetXY(12,$pdf->GetY()+21);
-        $pdf->SetFont('Arial','',12);
-        $pdf->MultiCell(0,5,iconv("UTF-8", "ISO-8859-1",$datos_venta['venta_codigo']),0,'C',false);
-
-		$pdf->Output("I","Factura_Nro".$datos_venta['venta_id'].".pdf",true);
-
-	}else{
-?>
-<!DOCTYPE html>
-<html lang="es">
-<head>
-	<meta charset="UTF-8">
-	<meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
-	<title><?php echo COMPANY; ?></title>
-	<?php include '../vistas/inc/Head.php'; ?>
-</head>
-<body>
-	<div class="full-box container-404">
-		<div>
-			<p class="text-center"><i class="fas fa-rocket fa-10x"></i></p>
-			<h1 class="text-center">¡Ocurrió un error!</h1>
-			<p class="lead text-center">No hemos encontrado datos de la venta</p>
-		</div>
-	</div>
-	<?php include '../vistas/inc/Script.php'; ?>
-</body>
-</html>
-<?php } ?>
+     // ... (código para generar tu PDF personalizado o usar el PDF de NubeFacT)
+ }
+} else {
+ // ... (tu código para manejar el caso de que no se encuentre la venta)
+}

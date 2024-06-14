@@ -46,11 +46,35 @@
                         </div>
                     </div>
                     <div class="col-12 col-md-6">
-                        <div class="form-group">
-                            <label for="cliente_numero_documento" class="bmd-label-floating">Numero de documento <?php echo CAMPO_OBLIGATORIO; ?></label>
-                            <input type="text" pattern="[a-zA-Z0-9-]{7,30}" class="form-control" name="cliente_numero_documento_reg" id="cliente_numero_documento" maxlength="30">
-                        </div>
-                    </div>
+    <div class="form-group">
+        <label for="cliente_numero_documento" class="bmd-label-floating">Numero de documento <?php echo CAMPO_OBLIGATORIO; ?></label>
+        <input type="text" pattern="[a-zA-Z0-9-]{7,30}" class="form-control" name="cliente_numero_documento_reg" id="cliente_numero_documento" maxlength="30">
+        <button type="button" class="btn btn-primary" onclick="extraerDatosCliente()">Extraer</button> </div>
+</div>
+<script>function extraerDatosCliente() {
+  const rucInput = document.getElementById("cliente_numero_documento");
+  const ruc = rucInput.value.trim();
+
+  if (ruc.length !== 11 && ruc.length !== 8) {
+    alert("Ingrese un RUC o DNI válido (8 o 11 dígitos)");
+    return;
+  }
+
+  const apiUrl = `consultar_ruc.php?ruc=${ruc}`; // Llamada al endpoint PHP
+
+  fetch(apiUrl)
+    .then((response) => response.json())
+    .then((data) => {
+      if (data.errors) {
+        alert("Error al consultar el RUC/DNI: " + data.errors);
+      } else {
+        // ... (llenar los campos del formulario)
+      }
+    })
+    .catch((error) => {
+      alert("Error en la petición: " + error);
+    });
+}</script>
                     <div class="col-12 col-md-6">
                         <div class="form-group">
                             <label for="cliente_nombre" class="bmd-label-floating">Nombres <?php echo CAMPO_OBLIGATORIO; ?></label>

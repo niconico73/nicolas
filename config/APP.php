@@ -20,8 +20,8 @@
 
 
 	/*----------  Tipos de documentos  ----------*/
-	const DOCUMENTOS_USUARIOS=["DNI","RUC","CARNET EXTRANJERIA"];
-	const DOCUMENTOS_EMPRESA=["DNI","RUC","CARNET EXTRANJERIA"];
+	const DOCUMENTOS_USUARIOS=["1","6","4"];
+	const DOCUMENTOS_EMPRESA=["1","6","4"];
 
 
 	/*----------  Tipos de unidades de productos  ----------*/
