@@ -1815,34 +1815,33 @@ error_reporting(E_ALL);
                     "campo_valor" => $num_operacion
                 ]
             ];
-$sql = "INSERT INTO pago (";
-$marcadores = "";
-$valores = [];
-
-foreach ($datos_pago as $campo => $valor) {
-    $sql .= $campo . ",";
-    $marcadores .= $valor['campo_marcador'] . ",";
-    $valores[] = $valor['campo_valor'];
-}
-
-$sql = rtrim($sql, ",") . ") VALUES (" . rtrim($marcadores, ",") . ")";
-echo $sql; // Imprime la consulta completa
-var_dump($valores); // Imprime los valores de los parámetros
-
-            $agregar_pago=mainModel::guardar_datos("pago",$datos_pago);
-
-            if($agregar_pago->rowCount()<1){
-                $alerta=[
-					"Alerta"=>"simple",
-					"Titulo"=>"Ocurrió un error inesperado",
-					"Texto"=>"No hemos podido agregar el pago, por favor intente nuevamente.",
-					"Tipo"=>"error"
-				];
-				echo json_encode($alerta);
-				exit();
+            $sql = "INSERT INTO pago (";
+            $marcadores = "";
+            $valores = [];
+            
+            foreach ($datos_pago as $campo => $valor) {
+                $sql .= $campo . ",";
+                $marcadores .= ":" . $campo . ","; // Usar el nombre del campo como marcador
+                $valores[] = $valor['campo_valor'];
             }
-            $agregar_pago->closeCursor();
-            $agregar_pago=mainModel::desconectar($agregar_pago);
+            
+            $sql = rtrim($sql, ",") . ") VALUES (" . rtrim($marcadores, ",") . ")";
+            
+            echo $sql; // Imprime la consulta completa
+            var_dump($valores); // Imprime los valores de los parámetros
+            
+            $agregar_pago = mainModel::guardar_datos("pago", $sql, $valores); // Pasar la consulta y los valores
+            
+            if ($agregar_pago === false) { // Verificar si hubo un error
+                $alerta = [
+                    "Alerta" => "simple",
+                    "Titulo" => "Ocurrió un error inesperado",
+                    "Texto" => "No hemos podido agregar el pago, por favor intente nuevamente.",
+                    "Tipo" => "error"
+                ];
+                echo json_encode($alerta);
+                exit();
+            }
 
             /*== Preparando datos para enviarlos al modelo ==*/
             $datos_venta=[
