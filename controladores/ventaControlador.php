@@ -1793,27 +1793,23 @@ error_reporting(E_ALL);
                 "pago_banco" => $pago_banco,
                 "pago_numero_operacion" => $num_operacion
             ];
-            
-            // Construir la consulta SQL (esta parte debe ir antes de guardar_datos)
+        
+            // Construir la consulta SQL
             $sql = "INSERT INTO pago (";
             $columnas = "";
             $valores = "";
-            
+        
             foreach ($datos_pago as $campo => $valor) {
                 $columnas .= $campo . ",";
                 $valores .= "?,";
             }
-            
+        
             $sql = rtrim($sql, ",") . ") VALUES (" . rtrim($valores, ",") . ")";
-            
-            // Imprimir consulta completa y valores (opcional, para depuración)
-            echo $sql; // Imprime la consulta completa
-            var_dump(array_values($datos_pago)); // Imprime los valores de los parámetros
-            
-            // Guardar los datos (ahora con la consulta y valores correctos)
-            
+        
+            // Guardar los datos
             $agregar_pago = mainModel::guardar_datos("pago", $sql, array_values($datos_pago));
-            if ($agregar_pago === false) { // Verificar si hubo un error
+        
+            if ($agregar_pago === false) {
                 $alerta = [
                     "Alerta" => "simple",
                     "Titulo" => "Ocurrió un error inesperado",
