@@ -275,132 +275,131 @@
                     </div>
                 </div>
                 <div class="col-12 col-lg-3">
-    <h3 class="text-center text-uppercase">Datos de la venta</h3>
-    <hr>
+                    <h3 class="text-center text-uppercase">Datos de la venta</h3>
+                    <hr>
 
-    <div class="form-group">
-        <label for="venta_fecha">Fecha</label>
-        <input type="date" class="form-control" name="venta_fecha_reg" id="venta_fecha" value="<?php echo date("Y-m-d"); ?>" readonly>
+                    <div class="form-group">
+                        <label for="venta_fecha">Fecha</label>
+                        <input type="date" class="form-control" name="venta_fecha_reg" id="venta_fecha" value="<?php echo date("Y-m-d"); ?>" readonly >
+                    </div>
+
+                    <div class="form-group">
+                        <label for="venta_caja">Caja</label>
+                        <input type="text" class="form-control" id="venta_caja" value="Caja #<?php echo $datos_caja['caja_numero']." - ".$datos_caja['caja_nombre']; ?>" readonly >
+                    </div>
+
+                    <div class="form-group">
+                        <label for="venta_cliente">Cliente</label>
+                        <?php
+                            if(isset($_SESSION['datos_cliente_venta']) && count($_SESSION['datos_cliente_venta'])>=1 && $_SESSION['datos_cliente_venta']['cliente_id']!=1){
+                        ?>
+                        <div class="container-fluid">
+                            <div class="row">
+                                <div class="col-10 text-center">
+                                    <input type="text" class="form-control" id="venta_cliente" value="<?php echo $_SESSION['datos_cliente_venta']['cliente_nombre']." ".$_SESSION['datos_cliente_venta']['cliente_apellido']; ?>" readonly>
+                                </div>
+                                <div class="col-2 text-center">
+                                    <form class="FormularioAjax" action="<?php echo SERVERURL; ?>ajax/ventaAjax.php" method="POST" data-form="sale_cliente" autocomplete="off">
+                                        <input type="hidden" name="cliente_id_del" value="<?php echo $_SESSION['datos_cliente_venta']['cliente_id']; ?>">
+                                        <input type="hidden" name="modulo_venta" value="eliminar_cliente">
+                                        <button type="submit" class="btn btn-danger" data-toggle="popover" data-trigger="hover" data-placement="top" data-content="Remover cliente">
+                                            <i class="fas fa-user-times"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        <?php
+                            }else{
+                                $datos_cliente=$lc->datos_tabla("Normal","cliente WHERE cliente_id='1'","*",0);
+                                if($datos_cliente->rowCount()==1){
+                                    $datos_cliente=$datos_cliente->fetch();
+
+                                    $_SESSION['datos_cliente_venta']=[
+                                        "cliente_id"=>$datos_cliente['cliente_id'],
+                                        "cliente_tipo_documento"=>$datos_cliente['cliente_tipo_documento'],
+                                        "cliente_numero_documento"=>$datos_cliente['cliente_numero_documento'],
+                                        "cliente_nombre"=>$datos_cliente['cliente_nombre'],
+                                        "cliente_apellido"=>$datos_cliente['cliente_apellido']
+                                    ];
+
+                                }else{
+                                    $_SESSION['datos_cliente_venta']=[
+                                        "cliente_id"=>1,
+                                        "cliente_tipo_documento"=>"N/A",
+                                        "cliente_numero_documento"=>"N/A",
+                                        "cliente_nombre"=>"Publico",
+                                        "cliente_apellido"=>"General"
+                                    ];
+                                }
+                        ?>
+                        <div class="container-fluid">
+                            <div class="row">
+                                <div class="col-10 text-center">
+                                    <input type="text" class="form-control" id="venta_cliente" value="<?php echo $_SESSION['datos_cliente_venta']['cliente_nombre']." ".$_SESSION['datos_cliente_venta']['cliente_apellido']; ?>" readonly>
+                                </div>
+                                <div class="col-2 text-center">
+                                    <button type="button" class="btn btn-info" data-toggle="popover" data-trigger="hover" id="btn_modal_cliente" data-placement="top" data-content="Agregar cliente">
+                                        <i class="fas fa-user-plus"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <?php } ?>
+                    </div>
+
+                    <?php if($_SESSION['venta_total']>0){ ?>
+                    <form class="FormularioAjax" action="<?php echo SERVERURL; ?>ajax/ventaAjax.php" method="POST" data-form="save" autocomplete="off" name="formsale">
+                        <input type="hidden" name="modulo_venta" value="registrar_venta">
+                    <?php }else { ?>
+                    <form name="formsale">
+                    <?php } ?>
+
+                    <label>Tipo de pago</label>
+                    <div class="form-group text-center">
+                        <div class="form-check form-check-inline" onclick="resetear_total('Contado')" >
+                            <input class="form-check-input" type="radio" name="venta_tipo_venta_reg" value="Contado" id="venta_radio_contado" checked >
+                            <label class="form-check-label text-secondary" for="venta_radio_contado" ><i class="fas fa-money-bill-alt"></i> &nbsp; Contado</label>
+                        </div>
+                        &nbsp; &nbsp;
+                        <div class="form-check form-check-inline" onclick="resetear_total('Credito')" >
+                            <input class="form-check-input" type="radio" name="venta_tipo_venta_reg" value="Credito" id="venta_radio_credito">
+                            <label class="form-check-label text-secondary" for="venta_radio_credito" ><i class="fab fa-cc-visa"></i> &nbsp; Credito</label>
+                        </div>
+                    </div>
+
+                    <label>Metodo de Pago:</label>
+<div class="form-group text-center">
+    <div class="form-check form-check-inline">
+        <input class="form-check-input" type="radio" name="banco" value="EFECTIVO" id="banco_efectivo" checked>
+        <label class="form-check-label" for="banco_efectivo">Efectivo</label>
     </div>
-
-    <div class="form-group">
-        <label for="venta_caja">Caja</label>
-        <input type="text" class="form-control" id="venta_caja" value="Caja #<?php echo $datos_caja['caja_numero'] . " - " . $datos_caja['caja_nombre']; ?>" readonly>
+    <div class="form-check form-check-inline">
+        <input class="form-check-input" type="radio" name="banco" value="YAPE" id="banco_yape">
+        <label class="form-check-label" for="banco_yape">Yape</label>
     </div>
-
-    <div class="form-group">
-        <label for="venta_cliente">Cliente</label>
-        <?php
-        if (isset($_SESSION['datos_cliente_venta']) && count($_SESSION['datos_cliente_venta']) >= 1 && $_SESSION['datos_cliente_venta']['cliente_id'] != 1) {
-        ?>
-            <div class="container-fluid">
-                <div class="row">
-                    <div class="col-10 text-center">
-                        <input type="text" class="form-control" id="venta_cliente" value="<?php echo $_SESSION['datos_cliente_venta']['cliente_nombre'] . " " . $_SESSION['datos_cliente_venta']['cliente_apellido']; ?>" readonly>
-                    </div>
-                    <div class="col-2 text-center">
-                        <form class="FormularioAjax" action="<?php echo SERVERURL; ?>ajax/ventaAjax.php" method="POST" data-form="sale_cliente" autocomplete="off">
-                            <input type="hidden" name="cliente_id_del" value="<?php echo $_SESSION['datos_cliente_venta']['cliente_id']; ?>">
-                            <input type="hidden" name="modulo_venta" value="eliminar_cliente">
-                            <button type="submit" class="btn btn-danger" data-toggle="popover" data-trigger="hover" data-placement="top" data-content="Remover cliente">
-                                <i class="fas fa-user-times"></i>
-                            </button>
-                        </form>
-                    </div>
-                </div>
-            </div>
-        <?php
-        } else {
-            $datos_cliente = $lc->datos_tabla("Normal", "cliente WHERE cliente_id='1'", "*", 0);
-            if ($datos_cliente->rowCount() == 1) {
-                $datos_cliente = $datos_cliente->fetch();
-
-                $_SESSION['datos_cliente_venta'] = [
-                    "cliente_id" => $datos_cliente['cliente_id'],
-                    "cliente_tipo_documento" => $datos_cliente['cliente_tipo_documento'],
-                    "cliente_numero_documento" => $datos_cliente['cliente_numero_documento'],
-                    "cliente_nombre" => $datos_cliente['cliente_nombre'],
-                    "cliente_apellido" => $datos_cliente['cliente_apellido']
-                ];
-            } else {
-                $_SESSION['datos_cliente_venta'] = [
-                    "cliente_id" => 1,
-                    "cliente_tipo_documento" => "N/A",
-                    "cliente_numero_documento" => "N/A",
-                    "cliente_nombre" => "Publico",
-                    "cliente_apellido" => "General"
-                ];
-            }
-        ?>
-            <div class="container-fluid">
-                <div class="row">
-                    <div class="col-10 text-center">
-                        <input type="text" class="form-control" id="venta_cliente" value="<?php echo $_SESSION['datos_cliente_venta']['cliente_nombre'] . " " . $_SESSION['datos_cliente_venta']['cliente_apellido']; ?>" readonly>
-                    </div>
-                    <div class="col-2 text-center">
-                        <button type="button" class="btn btn-info" data-toggle="popover" data-trigger="hover" id="btn_modal_cliente" data-placement="top" data-content="Agregar cliente">
-                            <i class="fas fa-user-plus"></i>
-                        </button>
-                    </div>
-                </div>
-            </div>
-        <?php } ?>
+    <div class="form-check form-check-inline">
+        <input class="form-check-input" type="radio" name="banco" value="PLIM" id="banco_plim">
+        <label class="form-check-label" for="banco_plim">Plim</label>
     </div>
+    <div class="form-check form-check-inline">
+        <input class="form-check-input" type="radio" name="banco" value="BCP" id="banco_bcp">
+        <label class="form-check-label" for="banco_bcp">BCP</label>
+    </div>
+    <div class="form-check form-check-inline">
+        <input class="form-check-input" type="radio" name="banco" value="INTERBANK" id="banco_interbank">
+        <label class="form-check-label" for="banco_interbank">Interbank</label>
+    </div>
+    <div class="form-check form-check-inline">
+        <input class="form-check-input" type="radio" name="banco" value="BBVA" id="banco_bbva">
+        <label class="form-check-label" for="banco_bbva">BBVA</label>
+    </div>
+</div>
 
-    <?php if ($_SESSION['venta_total'] > 0) { ?>
-        <form class="FormularioAjax" action="<?php echo SERVERURL; ?>ajax/ventaAjax.php" method="POST" data-form="save" autocomplete="off" name="formsale">
-            <input type="hidden" name="modulo_venta" value="registrar_venta">
-        <?php } else { ?>
-            <form name="formsale">
-            <?php } ?>
-
-            <label>Tipo de pago</label>
-            <div class="form-group text-center">
-                <div class="form-check form-check-inline" onclick="resetear_total('Contado')">
-                    <input class="form-check-input" type="radio" name="venta_tipo_venta_reg" value="Contado" id="venta_radio_contado" checked>
-                    <label class="form-check-label text-secondary" for="venta_radio_contado"><i class="fas fa-money-bill-alt"></i> &nbsp; Contado</label>
-                </div>
-                &nbsp; &nbsp;
-                <div class="form-check form-check-inline" onclick="resetear_total('Credito')">
-                    <input class="form-check-input" type="radio" name="venta_tipo_venta_reg" value="Credito" id="venta_radio_credito">
-                    <label class="form-check-label text-secondary" for="venta_radio_credito"><i class="fab fa-cc-visa"></i> &nbsp; Credito</label>
-                </div>
-            </div>
-
-            <label>Metodo de Pago:</label>
-            <div class="form-group text-center">
-                <div class="form-check form-check-inline">
-                    <input class="form-check-input" type="radio" name="banco" value="EFECTIVO" id="banco_efectivo" checked>
-                    <label class="form-check-label" for="banco_efectivo">Efectivo</label>
-                </div>
-                <div class="form-check form-check-inline">
-                    <input class="form-check-input" type="radio" name="banco" value="YAPE" id="banco_yape">
-                    <label class="form-check-label" for="banco_yape">Yape</label>
-                </div>
-                <div class="form-check form-check-inline">
-                    <input class="form-check-input" type="radio" name="banco" value="PLIM" id="banco_plim">
-                    <label class="form-check-label" for="banco_plim">Plim</label>
-                </div>
-                <div class="form-check form-check-inline">
-                    <input class="form-check-input" type="radio" name="banco" value="BCP" id="banco_bcp">
-                    <label class="form-check-label" for="banco_bcp">BCP</label>
-                </div>
-                <div class="form-check form-check-inline">
-                    <input class="form-check-input" type="radio" name="banco" value="INTERBANK" id="banco_interbank">
-                    <label class="form-check-label" for="banco_interbank">Interbank</label>
-                </div>
-                <div class="form-check form-check-inline">
-                    <input class="form-check-input" type="radio" name="banco" value="BBVA" id="banco_bbva">
-                    <label class="form-check-label" for="banco_bbva">BBVA</label>
-                </div>
-            </div>
-
-            <input type="hidden" name="pago_banco" id="pago_banco" value="EFECTIVO">
-
-            <div class="form-group">
-                <label for="num_operacion">N° de operación:</label>
-                <input type="text" class="form-control" id="num_operacion" name="num_operacion">
-            </div>
+<div class="form-group">
+    <label for="num_operacion">N° de operación:</label>
+    <input type="text" class="form-control" id="num_operacion" name="num_operacion">
+</div>
 
 <!--fin de metodo de pago-->
 

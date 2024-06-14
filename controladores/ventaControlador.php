@@ -753,10 +753,35 @@ error_reporting(E_ALL);
 
 
         /*---------- Controlador registrar venta ----------*/
-        public function registrar_venta_controlador(){
+        public function registrar_venta_controlador($pago_banco, $pago_numero_operacion)
+{
 
             $venta_tipo=mainModel::limpiar_cadena($_POST['venta_tipo_venta_reg']);
             $venta_pagado=mainModel::limpiar_cadena($_POST['venta_abono_reg']);
+$sql = "INSERT INTO pago (pago_fecha, pago_monto, venta_codigo, usuario_id, caja_id, pago_banco, pago_numero_operacion) 
+            VALUES (?, ?, ?, ?, ?, ?, ?)";
+
+    $stmt = mainModel::conectar()->prepare($sql);
+
+    if ($stmt) {
+        $stmt->bind_param("sdsiiss", $pago_fecha, $movimiento_cantidad, $codigo_venta, $_SESSION['id_svi'], $_SESSION['caja_svi'], $pago_banco, $pago_numero_operacion);
+
+        if ($stmt->execute()) {
+            echo "Datos de pago insertados correctamente.";
+        } else {
+            // Registro de error detallado
+            error_log("Error al insertar datos de pago: " . $stmt->error);
+            echo json_encode(array("success" => false, "message" => "Error al registrar el pago."));
+            exit(); // Detener la ejecución si hay un error
+        }
+
+        $stmt->close();
+    } else {
+        // Registro de error detallado
+        error_log("Error al preparar la consulta: " . mainModel::conectar()->error);
+        echo json_encode(array("success" => false, "message" => "Error al preparar la consulta."));
+        exit(); // Detener la ejecución si hay un error
+    }
 
             /*== Comprobando integridad de los datos ==*/
             if(mainModel::verificar_datos("[0-9.]{1,25}",$venta_pagado)){

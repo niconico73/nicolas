@@ -44,9 +44,19 @@ if (isset($_POST['modulo_venta'])) {
             echo $ins_venta->remover_descuento_venta_controlador();
             break;
         
-        case 'registrar_venta':
-            echo $ins_venta->registrar_venta_controlador();
-            break;
+            case 'registrar_venta':
+                // Verificar si los datos de pago llegan correctamente
+                if (isset($_POST['pago_banco']) && isset($_POST['pago_numero_operacion'])) {
+                    $pago_banco = $ins_venta->limpiar_cadena($_POST['pago_banco']);
+                    $pago_numero_operacion = $ins_venta->limpiar_cadena($_POST['pago_numero_operacion']);
+    
+                    // Pasar los datos al controlador para registrar la venta y los datos de pago
+                    echo $ins_venta->registrar_venta_controlador($pago_banco, $pago_numero_operacion);
+                } else {
+                    // Los datos no llegaron correctamente
+                    echo json_encode(array("success" => false, "message" => "Error: Faltan datos de pago."));
+                }
+                break;
         
         case 'agregar_pago':
             echo $ins_venta->agregar_pago_venta_controlador();
