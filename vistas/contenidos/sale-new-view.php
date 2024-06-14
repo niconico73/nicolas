@@ -368,31 +368,31 @@
                         </div>
                     </div>
 
-                    <label>Método de pago:</label>
+                    <label>Metodo de Pago::</label>
 <div class="form-group text-center">
     <div class="form-check form-check-inline">
-        <input class="form-check-input" type="radio" name="metodo_pago" value="EFECTIVO" id="metodo_pago_efectivo" checked>
-        <label class="form-check-label" for="metodo_pago_efectivo">Efectivo</label>
+        <input class="form-check-input" type="radio" name="banco" value="EFECTIVO" id="banco_efectivo" checked>
+        <label class="form-check-label" for="banco_efectivo">Efectivo</label>
     </div>
     <div class="form-check form-check-inline">
-        <input class="form-check-input" type="radio" name="metodo_pago" value="YAPE" id="metodo_pago_yape">
-        <label class="form-check-label" for="metodo_pago_yape">Yape</label>
+        <input class="form-check-input" type="radio" name="banco" value="YAPE" id="banco_yape">
+        <label class="form-check-label" for="banco_yape">Yape</label>
     </div>
     <div class="form-check form-check-inline">
-        <input class="form-check-input" type="radio" name="metodo_pago" value="PLIM" id="metodo_pago_plim">
-        <label class="form-check-label" for="metodo_pago_plim">Plim</label>
+        <input class="form-check-input" type="radio" name="banco" value="PLIM" id="banco_plim">
+        <label class="form-check-label" for="banco_plim">Plim</label>
     </div>
     <div class="form-check form-check-inline">
-        <input class="form-check-input" type="radio" name="metodo_pago" value="BCP" id="metodo_pago_bcp">
-        <label class="form-check-label" for="metodo_pago_bcp">BCP</label>
+        <input class="form-check-input" type="radio" name="banco" value="BCP" id="banco_bcp">
+        <label class="form-check-label" for="banco_bcp">BCP</label>
     </div>
     <div class="form-check form-check-inline">
-        <input class="form-check-input" type="radio" name="metodo_pago" value="INTERBANK" id="metodo_pago_interbank">
-        <label class="form-check-label" for="metodo_pago_interbank">Interbank</label>
+        <input class="form-check-input" type="radio" name="banco" value="INTERBANK" id="banco_interbank">
+        <label class="form-check-label" for="banco_interbank">Interbank</label>
     </div>
     <div class="form-check form-check-inline">
-        <input class="form-check-input" type="radio" name="metodo_pago" value="CONTINENTAL" id="metodo_pago_continental">
-        <label class="form-check-label" for="metodo_pago_continental">Continental</label>
+        <input class="form-check-input" type="radio" name="banco" value="BBVA" id="banco_bbva">
+        <label class="form-check-label" for="banco_bbva">BBVA</label>
     </div>
 </div>
 

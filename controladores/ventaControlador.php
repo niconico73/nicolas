@@ -1692,31 +1692,11 @@ error_reporting(E_ALL);
             /*== Recuperando el codigo de la venta y monto ==*/
             $venta_codigo=mainModel::limpiar_cadena($_POST['pago_codigo_reg']);
             $pago_monto=mainModel::limpiar_cadena($_POST['pago_monto_reg']);
+            $metodo_pago = mainModel::limpiar_cadena($_POST['metodo_pago']);
             $banco = mainModel::limpiar_cadena($_POST['banco']);
             $num_operacion = mainModel::limpiar_cadena($_POST['num_operacion']);
-            $metodo_pago = mainModel::limpiar_cadena($_POST['metodo_pago']);
 
-             // Validar datos (opcional)
-    if (empty($banco) && $metodo_pago === "Virtual") {
-        $alerta = [
-            "Alerta" => "simple",
-            "Titulo" => "Ocurrió un error inesperado",
-            "Texto" => "Debes seleccionar un banco para pagos virtuales.",
-            "Tipo" => "error"
-        ];
-        echo json_encode($alerta);
-        exit();
-    }
-    if (empty($num_operacion) && $metodo_pago === "Virtual") {
-        $alerta = [
-            "Alerta" => "simple",
-            "Titulo" => "Ocurrió un error inesperado",
-            "Texto" => "Debes ingresar un número de operación para pagos virtuales.",
-            "Tipo" => "error"
-        ];
-        echo json_encode($alerta);
-        exit();
-    }
+
             /*== Comprobando venta ==*/
 			$check_venta=mainModel::ejecutar_consulta_simple("SELECT * FROM venta WHERE venta_codigo='$venta_codigo' AND venta_estado='Pendiente' AND venta_tipo='Credito'");
 			if($check_venta->rowCount()<=0){
@@ -1827,11 +1807,15 @@ error_reporting(E_ALL);
                     "campo_marcador"=>":Caja",
                     "campo_valor"=>$_SESSION['caja_svi']
                 ],
+                "pago_metodo" => [ // Cambiamos el nombre del campo
+                    "campo_marcador" => ":MetodoPago",
+                    "campo_valor" => $metodo_pago
+                ],
                 "pago_banco" => [
                     "campo_marcador" => ":Banco",
                     "campo_valor" => $banco
                 ],
-                "pago_numero_operacion" => [  // Cambia esta línea
+                "pago_numero_operacion" => [
                     "campo_marcador" => ":NumOperacion",
                     "campo_valor" => $num_operacion
                 ]
