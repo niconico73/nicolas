@@ -371,34 +371,34 @@
                     <label>Metodo de Pago:</label>
 <div class="form-group text-center">
     <div class="form-check form-check-inline">
-        <input class="form-check-input" type="radio" name="banco" value="EFECTIVO" id="banco_efectivo" checked>
+        <input class="form-check-input" type="radio" name="pago_banco" value="EFECTIVO" id="banco_efectivo" checked>
         <label class="form-check-label" for="banco_efectivo">Efectivo</label>
     </div>
     <div class="form-check form-check-inline">
-        <input class="form-check-input" type="radio" name="banco" value="YAPE" id="banco_yape">
+        <input class="form-check-input" type="radio" name="pago_banco" value="YAPE" id="banco_yape">
         <label class="form-check-label" for="banco_yape">Yape</label>
     </div>
     <div class="form-check form-check-inline">
-        <input class="form-check-input" type="radio" name="banco" value="PLIM" id="banco_plim">
+        <input class="form-check-input" type="radio" name="pago_banco" value="PLIM" id="banco_plim">
         <label class="form-check-label" for="banco_plim">Plim</label>
     </div>
     <div class="form-check form-check-inline">
-        <input class="form-check-input" type="radio" name="banco" value="BCP" id="banco_bcp">
+        <input class="form-check-input" type="radio" name="pago_banco" value="BCP" id="banco_bcp">
         <label class="form-check-label" for="banco_bcp">BCP</label>
     </div>
     <div class="form-check form-check-inline">
-        <input class="form-check-input" type="radio" name="banco" value="INTERBANK" id="banco_interbank">
+        <input class="form-check-input" type="radio" name="pago_banco" value="INTERBANK" id="banco_interbank">
         <label class="form-check-label" for="banco_interbank">Interbank</label>
     </div>
     <div class="form-check form-check-inline">
-        <input class="form-check-input" type="radio" name="banco" value="BBVA" id="banco_bbva">
+        <input class="form-check-input" type="radio" name="pago_banco" value="BBVA" id="banco_bbva">
         <label class="form-check-label" for="banco_bbva">BBVA</label>
     </div>
 </div>
 
 <div class="form-group">
     <label for="num_operacion">N° de operación:</label>
-    <input type="text" class="form-control" id="num_operacion" name="num_operacion">
+    <input type="text" class="form-control" id="num_operacion" name="pago_numero_operacion">
 </div>
 
 <!--fin de metodo de pago-->

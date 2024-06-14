@@ -753,35 +753,10 @@ error_reporting(E_ALL);
 
 
         /*---------- Controlador registrar venta ----------*/
-        public function registrar_venta_controlador($pago_banco, $pago_numero_operacion)
-{
+        public function registrar_venta_controlador(){
 
             $venta_tipo=mainModel::limpiar_cadena($_POST['venta_tipo_venta_reg']);
             $venta_pagado=mainModel::limpiar_cadena($_POST['venta_abono_reg']);
-$sql = "INSERT INTO pago (pago_fecha, pago_monto, venta_codigo, usuario_id, caja_id, pago_banco, pago_numero_operacion) 
-            VALUES (?, ?, ?, ?, ?, ?, ?)";
-
-    $stmt = mainModel::conectar()->prepare($sql);
-
-    if ($stmt) {
-        $stmt->bind_param("sdsiiss", $pago_fecha, $movimiento_cantidad, $codigo_venta, $_SESSION['id_svi'], $_SESSION['caja_svi'], $pago_banco, $pago_numero_operacion);
-
-        if ($stmt->execute()) {
-            echo "Datos de pago insertados correctamente.";
-        } else {
-            // Registro de error detallado
-            error_log("Error al insertar datos de pago: " . $stmt->error);
-            echo json_encode(array("success" => false, "message" => "Error al registrar el pago."));
-            exit(); // Detener la ejecución si hay un error
-        }
-
-        $stmt->close();
-    } else {
-        // Registro de error detallado
-        error_log("Error al preparar la consulta: " . mainModel::conectar()->error);
-        echo json_encode(array("success" => false, "message" => "Error al preparar la consulta."));
-        exit(); // Detener la ejecución si hay un error
-    }
 
             /*== Comprobando integridad de los datos ==*/
             if(mainModel::verificar_datos("[0-9.]{1,25}",$venta_pagado)){
@@ -1717,8 +1692,8 @@ $sql = "INSERT INTO pago (pago_fecha, pago_monto, venta_codigo, usuario_id, caja
             /*== Recuperando el codigo de la venta y monto ==*/
             $venta_codigo=mainModel::limpiar_cadena($_POST['pago_codigo_reg']);
             $pago_monto=mainModel::limpiar_cadena($_POST['pago_monto_reg']);
-            $pago_banco = mainModel::limpiar_cadena($_POST['banco']); // Obtener directamente el valor del botón de radio
-            $num_operacion = mainModel::limpiar_cadena($_POST['num_operacion']);
+            $pago_banco = mainModel::limpiar_cadena($_POST['pago_banco']); // Obtener directamente el valor del botón de radio
+            $num_operacion = mainModel::limpiar_cadena($_POST['pago_numero_operacion']);
 
 
             /*== Comprobando venta ==*/
@@ -1816,25 +1791,29 @@ $sql = "INSERT INTO pago (pago_fecha, pago_monto, venta_codigo, usuario_id, caja
                 "usuario_id" => $_SESSION['id_svi'],
                 "caja_id" => $_SESSION['caja_svi'],
                 "pago_banco" => $pago_banco,
-                "pago_numero_operacion" => $num_operacion
+                "pago_numero_operacion" => $pago_numero_operacion
             ];
-        
-            // Construir la consulta SQL
+            
+            // Construir la consulta SQL (esta parte debe ir antes de guardar_datos)
             $sql = "INSERT INTO pago (";
             $columnas = "";
             $valores = "";
-        
+            
             foreach ($datos_pago as $campo => $valor) {
                 $columnas .= $campo . ",";
                 $valores .= "?,";
             }
-        
+            
             $sql = rtrim($sql, ",") . ") VALUES (" . rtrim($valores, ",") . ")";
-        
-            // Guardar los datos
+            
+            // Imprimir consulta completa y valores (opcional, para depuración)
+            echo $sql; // Imprime la consulta completa
+            var_dump(array_values($datos_pago)); // Imprime los valores de los parámetros
+            
+            // Guardar los datos (ahora con la consulta y valores correctos)
+            
             $agregar_pago = mainModel::guardar_datos("pago", $sql, array_values($datos_pago));
-        
-            if ($agregar_pago === false) {
+            if ($agregar_pago === false) { // Verificar si hubo un error
                 $alerta = [
                     "Alerta" => "simple",
                     "Titulo" => "Ocurrió un error inesperado",
