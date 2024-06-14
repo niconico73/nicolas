@@ -1784,7 +1784,6 @@ error_reporting(E_ALL);
             $pago_fecha=date("Y-m-d");
             $pago_hora=date("h:i a");
 
-            /*== Preparando datos para enviarlos al modelo ==*/
             $datos_pago = [
                 "pago_fecha" => $pago_fecha,
                 "pago_monto" => $movimiento_cantidad,
@@ -1794,23 +1793,26 @@ error_reporting(E_ALL);
                 "pago_banco" => $pago_banco,
                 "pago_numero_operacion" => $num_operacion
             ];
+            
+            // Construir la consulta SQL (esta parte debe ir antes de guardar_datos)
             $sql = "INSERT INTO pago (";
-            $marcadores = "";
-            $valores = [];
+            $columnas = "";
+            $valores = "";
             
             foreach ($datos_pago as $campo => $valor) {
-                $sql .= $campo . ",";
-                $marcadores .= ":" . $campo . ","; // Usar el nombre del campo como marcador
-                $valores[] = $valor['campo_valor'];
+                $columnas .= $campo . ",";
+                $valores .= "?,";
             }
             
-            $sql = rtrim($sql, ",") . ") VALUES (" . rtrim($marcadores, ",") . ")";
+            $sql = rtrim($sql, ",") . ") VALUES (" . rtrim($valores, ",") . ")";
             
+            // Imprimir consulta completa y valores (opcional, para depuración)
             echo $sql; // Imprime la consulta completa
-            var_dump($valores); // Imprime los valores de los parámetros
+            var_dump(array_values($datos_pago)); // Imprime los valores de los parámetros
             
-            $agregar_pago = mainModel::guardar_datos("pago", $sql, $valores); // Pasar la consulta y los valores
+            // Guardar los datos (ahora con la consulta y valores correctos)
             
+            $agregar_pago = mainModel::guardar_datos("pago", $sql, array_values($datos_pago));
             if ($agregar_pago === false) { // Verificar si hubo un error
                 $alerta = [
                     "Alerta" => "simple",
