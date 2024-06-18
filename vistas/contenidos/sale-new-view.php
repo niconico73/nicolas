@@ -117,13 +117,13 @@
                                 <div class="col-12 col-md-6 text-center">
                                     <button type="button" class="btn btn-primary" onclick="print_ticket('<?php echo SERVERURL."pdf/ticket_".THERMAL_PRINT_SIZE."mm.php?code=".$_SESSION['venta_codigo_factura']; ?>')" >
                                         <i class="fas fa-receipt fa-4x"></i><br>
-                                        Imprimir ticket de venta
+                                        Imprimir Boleta
                                     </buttona>
                                 </div>
                                 <div class="col-12 col-md-6 text-center">
                                     <button type="button" class="btn btn-primary" onclick="print_invoice('<?php echo SERVERURL."pdf/invoice.php?code=".$_SESSION['venta_codigo_factura']; ?>')" >
                                         <i class="fas fa-file-invoice-dollar fa-4x"></i><br>
-                                        Imprimir factura de venta
+                                        Imprimir factura
                                     </button>
                                 </div>
                             </div>

@@ -1,39 +1,25 @@
 <?php
-
 $peticion_ajax = true;
 $code = (isset($_GET['code'])) ? $_GET['code'] : 0;
 
-/*---------- Incluyendo configuraciones ----------*/
 require_once "../config/APP.php";
-
-/*---------- Instancia al controlador venta ----------*/
 require_once "../controladores/ventaControlador.php";
-$ins_venta = new ventaControlador();
 
+$ins_venta = new ventaControlador();
 $datos_venta = $ins_venta->datos_tabla("Normal", "venta INNER JOIN cliente ON venta.cliente_id=cliente.cliente_id INNER JOIN usuario ON venta.usuario_id=usuario.usuario_id WHERE (venta_codigo='$code')", "*", 0);
 
 if ($datos_venta->rowCount() == 1) {
-
-    /*---------- Datos de la venta ----------*/
     $datos_venta = $datos_venta->fetch();
+    $datos_empresa = $ins_venta->datos_tabla("Normal", "empresa LIMIT 1", "*", 0)->fetch();
 
-    /*---------- Seleccion de datos de la empresa ----------*/
-    $datos_empresa = $ins_venta->datos_tabla("Normal", "empresa LIMIT 1", "*", 0);
-
-    $datos_empresa = $datos_empresa->fetch();
-
-    // ***** INICIO INTEGRACIÓN NUBEFACT *****
-
-    // RUTA para enviar documentos
-    $ruta = "https://api.nubefact.com/api/v1/ee3e84f1-8ee6-4ad9-a0d9-2ad2c62bdcb7";
-
-    //TOKEN para enviar documentos
-    $token = "07f66bd825c1498e9bb4eabc7645f3c371c1af7e9a244d8bbbebb14155a1219c";
+    // ***** INICIO INTEGRACIÓN NUBEFACT - BOLETA *****
+    $ruta = "https://api.nubefact.com/api/v1/ee3e84f1-8ee6-4ad9-a0d9-2ad2c62bdcb7"; 
+    $token = "07f66bd825c1498e9bb4eabc7645f3c371c1af7e9a244d8bbbebb14155a1219c"; 
 
     $data = array(
         "operacion"                    => "generar_comprobante",
-        "tipo_de_comprobante"          => "1",
-        "serie"                        => "FFF1",
+        "tipo_de_comprobante"          => "2", // 2 para Boleta de Venta
+        "serie"                        => "BBB1", // Serie para boletas
         "numero"                       => $datos_venta['venta_id'],
         "sunat_transaction"            => "1",
         "cliente_tipo_de_documento"    => $datos_venta['cliente_tipo_documento'],
@@ -47,12 +33,11 @@ if ($datos_venta->rowCount() == 1) {
         "total_igv"                    => $datos_venta['venta_impuestos'],
         "total"                        => $datos_venta['venta_total_final'],
         "enviar_automaticamente_a_la_sunat" => "true",
-        "items" => array() 
+        "items" => array()
     );
 
-    // Datos de los items (productos o servicios)
-    $venta_detalle = $ins_venta->datos_tabla("Normal", "venta_detalle WHERE venta_codigo='" . $datos_venta['venta_codigo'] . "'", "*", 0);
-    $venta_detalle = $venta_detalle->fetchAll();
+    // Datos de los items (igual que para la factura)
+    $venta_detalle = $ins_venta->datos_tabla("Normal", "venta_detalle WHERE venta_codigo='" . $datos_venta['venta_codigo'] . "'", "*", 0)->fetchAll();
 
     foreach ($venta_detalle as $detalle) {
         $valor_unitario = $detalle['venta_detalle_precio_venta'] / 1.18;

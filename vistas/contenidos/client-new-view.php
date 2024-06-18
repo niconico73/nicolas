@@ -52,29 +52,34 @@
         <button type="button" class="btn btn-primary" onclick="extraerDatosCliente()">Extraer</button> </div>
 </div>
 <script>function extraerDatosCliente() {
-  const rucInput = document.getElementById("cliente_numero_documento");
-  const ruc = rucInput.value.trim();
+  const documentoInput = document.getElementById("cliente_numero_documento");
+  const documento = documentoInput.value.trim();
 
-  if (ruc.length !== 11 && ruc.length !== 8) {
+  if (documento.length !== 11 && documento.length !== 8) {
     alert("Ingrese un RUC o DNI válido (8 o 11 dígitos)");
     return;
   }
 
-  const apiUrl = `consultar_ruc.php?ruc=${ruc}`; // Llamada al endpoint PHP
+  const tipoDocumento = documento.length === 11 ? 'sunat/ruc' : 'reniec/dni';
+
+  // URL de tu endpoint PHP
+  const apiUrl = `ajax/consultar_documento.php?numero=${documento}&tipo=${tipoDocumento}`;
 
   fetch(apiUrl)
     .then((response) => response.json())
     .then((data) => {
-      if (data.errors) {
-        alert("Error al consultar el RUC/DNI: " + data.errors);
+      if (data.success) {
+        // Llenar los campos del formulario con los datos obtenidos
+        // ... (ajusta según la estructura de la respuesta de apis.net.pe)
       } else {
-        // ... (llenar los campos del formulario)
+        alert("Error al consultar el RUC/DNI: " + data.message);
       }
     })
     .catch((error) => {
       alert("Error en la petición: " + error);
     });
-}</script>
+}
+</script>
                     <div class="col-12 col-md-6">
                         <div class="form-group">
                             <label for="cliente_nombre" class="bmd-label-floating">Nombres <?php echo CAMPO_OBLIGATORIO; ?></label>
