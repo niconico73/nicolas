@@ -217,7 +217,7 @@
                                     <td>'.MONEDA_SIMBOLO.number_format($pago['pago_monto'],MONEDA_DECIMALES,MONEDA_SEPARADOR_DECIMAL,MONEDA_SEPARADOR_MILLAR).' '.MONEDA_NOMBRE.'</td>
                                     <td>'.$pago['usuario_nombre']." ".$pago['usuario_apellido'].'</td>
                                     <td>Caja #'.$pago['caja_numero']." - ".$pago['caja_nombre'].'</td>
-                                </tr>
+
                                 ';
                                 $cc++;
                             }
@@ -227,6 +227,9 @@
                     ?>
                 </tbody>
             </table>
+            
+  </div>
+</div>
         </div>
         <?php if($datos_venta['venta_pagado']<$datos_venta['venta_total_final'] && $datos_venta['venta_tipo']="Credito"){ ?>
         <p class="text-center">

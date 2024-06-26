@@ -1690,28 +1690,27 @@ error_reporting(E_ALL);
         public function agregar_pago_venta_controlador(){
 
             /*== Recuperando el codigo de la venta y monto ==*/
-            $venta_codigo=mainModel::limpiar_cadena($_POST['pago_codigo_reg']);
-            $pago_monto=mainModel::limpiar_cadena($_POST['pago_monto_reg']);
-            $pago_banco = mainModel::limpiar_cadena($_POST['pago_banco']); // Obtener directamente el valor del botón de radio
+            $venta_codigo = mainModel::limpiar_cadena($_POST['pago_codigo_reg']);
+            $pago_monto = mainModel::limpiar_cadena($_POST['pago_monto_reg']);
+            $pago_banco = mainModel::limpiar_cadena($_POST['pago_banco']); 
             $num_operacion = mainModel::limpiar_cadena($_POST['pago_numero_operacion']);
-
-
+        
             /*== Comprobando venta ==*/
-			$check_venta=mainModel::ejecutar_consulta_simple("SELECT * FROM venta WHERE venta_codigo='$venta_codigo' AND venta_estado='Pendiente' AND venta_tipo='Credito'");
-			if($check_venta->rowCount()<=0){
-				$alerta=[
-					"Alerta"=>"simple",
-					"Titulo"=>"Ocurrió un error inesperado",
-					"Texto"=>"No hemos encontrado en la base de datos la venta seleccionada para realizar el pago. También es posible que la venta ya haya sido cancelada o no es una venta al crédito por lo tanto no podemos agregar pagos",
-					"Tipo"=>"error"
-				];
-				echo json_encode($alerta);
-				exit();
+            $check_venta = mainModel::ejecutar_consulta_simple("SELECT * FROM venta WHERE venta_codigo='$venta_codigo' AND venta_estado='Pendiente' AND venta_tipo='Credito'");
+            if($check_venta->rowCount() <= 0){
+                $alerta = [
+                    "Alerta" => "simple",
+                    "Titulo" => "Ocurrió un error inesperado",
+                    "Texto" => "No hemos encontrado en la base de datos la venta seleccionada para realizar el pago. También es posible que la venta ya haya sido cancelada o no es una venta al crédito por lo tanto no podemos agregar pagos",
+                    "Tipo" => "error"
+                ];
+                echo json_encode($alerta);
+                exit();
             }else{
-                $datos_venta=$check_venta->fetch();
+                $datos_venta = $check_venta->fetch();
             }
             $check_venta->closeCursor();
-            $check_venta=mainModel::desconectar($check_venta);
+            $check_venta = mainModel::desconectar($check_venta);
 
             /*== Comprobando pago ==*/
             if($pago_monto=="" || $pago_monto<=0){
