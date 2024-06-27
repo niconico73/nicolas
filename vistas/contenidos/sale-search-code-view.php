@@ -35,23 +35,21 @@
             </a>
         </li>
         <li>
-            <a class="active" href="<?php echo SERVERURL; ?>sale-search-code/">
-                <i class="fas fa-search-dollar fa-fw"></i> &nbsp; Buscar venta (Código)
+            <a class="active" href="<?php echo SERVERURL; ?>sale-search-date/">
+                <i class="fas fa-search-dollar fa-fw"></i> &nbsp; Buscar venta (Código o Cliente)
             </a>
         </li>
-    </ul>	
-</div>
-<?php
-	if(!isset($_SESSION['busqueda_venta']) && empty($_SESSION['busqueda_venta'])){
+        <?php
+    if(!isset($_SESSION['busqueda_venta']) && empty($_SESSION['busqueda_venta'])){
 ?>
 <div class="container-fluid">
-    <form class="form-neon FormularioAjax" action="<?php echo SERVERURL; ?>ajax/buscadorAjax.php" data-form="default" method="POST" autocomplete="off" >
+    <form class="form-neon FormularioAjax" action="<?php echo SERVERURL; ?>ajax/buscadorAjax.php" data-form="default" method="POST" autocomplete="off">
         <input type="hidden" name="modulo" value="venta">
         <div class="container-fluid">
             <div class="row justify-content-md-center">
                 <div class="col-12 col-md-6">
                     <div class="form-group">
-                        <label for="inputSearch" class="bmd-label-floating">Introduzca el código de la venta</label>
+                        <label for="inputSearch" class="bmd-label-floating">Introduzca el código de la venta o datos del cliente</label>
                         <input type="text" class="form-control" name="busqueda_inicial" pattern="[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ- ]{1,30}" id="inputSearch" maxlength="30">
                     </div>
                 </div>
@@ -85,6 +83,8 @@
         </div>
     </form>
 </div>
+
+
 
 <div class="container-fluid">
     <?php

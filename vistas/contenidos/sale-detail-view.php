@@ -194,42 +194,52 @@
     <hr style="margin: 70px 0; ">
 
     <h4 class="text-center">Pagos realizados</h4>
-    <div class="container-fluid">
-        <div class="table-responsive">
-            <table class="table table-hover table-bordered">
-                <thead class="bg-primary">
-                    <tr class="text-center text-uppercase">
-                        <th scope="col">#</th>
-                        <th scope="col">Fecha</th>
-                        <th scope="col">Monto</th>
-                        <th scope="col">Vendedor</th>
-                        <th scope="col">Caja</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php
-                        $datos_pago=$lc->datos_tabla("Normal","pago INNER JOIN usuario ON pago.usuario_id=usuario.usuario_id INNER JOIN caja ON pago.caja_id=caja.caja_id WHERE (pago.venta_codigo='".$datos_venta['venta_codigo']."')","*",0);
-                        if($datos_pago->rowCount()>=1){
-                            $datos_pago=$datos_pago->fetchAll();
-                            $cc=1;
-                            foreach($datos_pago as $pago){
-                                echo '
-                                <tr class="text-center text-uppercase">
-                                    <th scope="row">'.$cc.'</th>
-                                    <td>'.date("d-m-Y", strtotime($pago['pago_fecha'])).'</td>
-                                    <td>'.MONEDA_SIMBOLO.number_format($pago['pago_monto'],MONEDA_DECIMALES,MONEDA_SEPARADOR_DECIMAL,MONEDA_SEPARADOR_MILLAR).' '.MONEDA_NOMBRE.'</td>
-                                    <td>'.$pago['usuario_nombre']." ".$pago['usuario_apellido'].'</td>
-                                    <td>Caja #'.$pago['caja_numero']." - ".$pago['caja_nombre'].'</td>
-                                </tr>
-                                ';
-                                $cc++;
-                            }
-                        }else{
-                            echo '<tr class="text-center text-uppercase"><td colspan="7">No hay datos para mostrar</td></tr>';
+<div class="container-fluid">
+    <div class="table-responsive">
+        <table class="table table-hover table-bordered">
+            <thead class="bg-primary">
+                <tr class="text-center text-uppercase">
+                    <th scope="col">#</th>
+                    <th scope="col">Fecha</th>
+                    <th scope="col">Monto</th>
+                    <th scope="col">Vendedor</th>
+                    <th scope="col">Caja</th>
+                    <th scope="col">Número de Operación</th>
+                    <th scope="col">Banco</th>
+                    <th scope="col">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php
+                    $datos_pago=$lc->datos_tabla("Normal","pago INNER JOIN usuario ON pago.usuario_id=usuario.usuario_id INNER JOIN caja ON pago.caja_id=caja.caja_id WHERE (pago.venta_codigo='".$datos_venta['venta_codigo']."')","*",0);
+                    if($datos_pago->rowCount()>=1){
+                        $datos_pago=$datos_pago->fetchAll();
+                        $cc=1;
+                        foreach($datos_pago as $pago){
+                            echo '
+                            <tr class="text-center text-uppercase">
+                                <th scope="row">'.$cc.'</th>
+                                <td>'.date("d-m-Y", strtotime($pago['pago_fecha'])).'</td>
+                                <td>'.MONEDA_SIMBOLO.number_format($pago['pago_monto'],MONEDA_DECIMALES,MONEDA_SEPARADOR_DECIMAL,MONEDA_SEPARADOR_MILLAR).' '.MONEDA_NOMBRE.'</td>
+                                <td>'.$pago['usuario_nombre']." ".$pago['usuario_apellido'].'</td>
+                                <td>Caja #'.$pago['caja_numero']." - ".$pago['caja_nombre'].'</td>
+                                <td>'.$pago['numero_operacion'].'</td>
+                                <td>'.$pago['banco'].'</td>
+                                <td>
+                                    <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#ModalEditPayment" data-id="'.$pago['pago_id'].'" data-operacion="'.$pago['numero_operacion'].'" data-banco="'.$pago['banco'].'">
+                                        <i class="fas fa-edit fa-fw"></i> Editar
+                                    </button>
+                                </td>
+                            </tr>
+                            ';
+                            $cc++;
                         }
-                    ?>
-                </tbody>
-            </table>
+                    }else{
+                        echo '<tr class="text-center text-uppercase"><td colspan="8">No hay datos para mostrar</td></tr>';
+                    }
+                ?>
+            </tbody>
+        </table>
         </div>
         <?php if($datos_venta['venta_pagado']<$datos_venta['venta_total_final'] && $datos_venta['venta_tipo']="Credito"){ ?>
         <p class="text-center">
@@ -237,6 +247,69 @@
         </p>
         <?php } ?>
     </div>
+<!-- FORMULARIO NICOLAS -->
+<div class="modal fade" id="ModalEditPayment" tabindex="-1" role="dialog" aria-labelledby="ModalEditPaymentLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <form class="modal-content FormularioAjax" action="<?php echo SERVERURL; ?>ajax/pagoAjax.php" method="POST" data-form="update" autocomplete="off">
+            <div class="modal-header">
+                <h5 class="modal-title" id="ModalEditPaymentLabel">Editar Pago</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" name="modulo_pago" value="editar">
+                <input type="hidden" name="pago_id" id="pago_id" value="">
+                <div class="container-fluid">
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="form-group">
+                                <label for="numero_operacion">Número de Operación</label>
+                                <input type="text" class="form-control" id="numero_operacion" name="numero_operacion" required>
+                            </div>
+                            <div class="form-group">
+    <label for="banco">Banco</label><br>
+    <input type="checkbox" id="banco_bcp" name="banco[]" value="BCP">
+    <label for="banco_bcp">BCP</label><br>
+    <input type="checkbox" id="banco_continental" name="banco[]" value="CONTINENTAL">
+    <label for="banco_continental">CONTINENTAL</label><br>
+    <input type="checkbox" id="banco_interbank" name="banco[]" value="INTERBANK">
+    <label for="banco_interbank">INTERBANK</label><br>
+    <input type="checkbox" id="banco_yape" name="banco[]" value="YAPE">
+    <label for="banco_yape">YAPE</label><br>
+    <input type="checkbox" id="banco_plim" name="banco[]" value="PLIM">
+    <label for="banco_plim">PLIM</label><br>
+    <input type="checkbox" id="banco_efectivo" name="banco[]" value="EFECTIVO">
+    <label for="banco_efectivo">EFECTIVO</label><br>
+</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger" data-dismiss="modal"><i class="far fa-times-circle"></i> &nbsp; Cancelar</button>
+                <button type="submit" class="btn btn-info"><i class="fas fa-save fa-fw"></i> &nbsp; Guardar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    $('#ModalEditPayment').on('show.bs.modal', function (event) {
+        var button = $(event.relatedTarget); // Botón que activó el modal
+        var id = button.data('id'); // Extraer información de datos-*
+        var operacion = button.data('operacion');
+        var banco = button.data('banco');
+        
+        var modal = $(this);
+        modal.find('.modal-body #pago_id').val(id);
+        modal.find('.modal-body #numero_operacion').val(operacion);
+        modal.find('.modal-body #banco').val(banco);
+    });
+</script>
+
+ <!-- FIN FORMULARIO NICOLAS -->
+
 
     <hr style="margin: 70px 0; ">
 
@@ -343,7 +416,6 @@
             </form>
         </div>
     </div>
-
     <!-- Modal devolucion -->
     <div class="modal fade" id="ModalReturn" tabindex="-1" role="dialog" aria-labelledby="ModalReturn" aria-hidden="true">
         <div class="modal-dialog" role="document">

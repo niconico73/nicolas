@@ -26,11 +26,14 @@
 
 
 		/*----------  Funcion ejecutar consultas simples  ----------*/
-		protected static function ejecutar_consulta_simple($consulta){
+		public function ejecutar_consulta_simple($consulta) {
 			$sql=self::conectar()->prepare($consulta);
 			$sql->execute();
 			return $sql;
 		} /*--  Fin Funcion --*/
+ public function ejecutarConsultaSimpleDesdeFuera($consulta) {
+        return $this->ejecutar_consulta_simple($consulta);
+    }
 
 
 		/*----------  Funcion para ejecutar una consulta INSERT preparada  ----------*/
@@ -183,35 +186,38 @@
 
 
 		/*----------  Funcion limpiar cadenas  ----------*/
-		protected static function limpiar_cadena($cadena){
-			$cadena=trim($cadena);
-			$cadena=stripslashes($cadena);
-			$cadena=str_ireplace("<script>", "", $cadena);
-			$cadena=str_ireplace("</script>", "", $cadena);
-			$cadena=str_ireplace("<script src", "", $cadena);
-			$cadena=str_ireplace("<script type=", "", $cadena);
-			$cadena=str_ireplace("SELECT * FROM", "", $cadena);
-			$cadena=str_ireplace("DELETE FROM", "", $cadena);
-			$cadena=str_ireplace("INSERT INTO", "", $cadena);
-			$cadena=str_ireplace("DROP TABLE", "", $cadena);
-			$cadena=str_ireplace("DROP DATABASE", "", $cadena);
-			$cadena=str_ireplace("TRUNCATE TABLE", "", $cadena);
-			$cadena=str_ireplace("SHOW TABLES;", "", $cadena);
-			$cadena=str_ireplace("SHOW DATABASES;", "", $cadena);
-			$cadena=str_ireplace("<?php", "", $cadena);
-			$cadena=str_ireplace("?>", "", $cadena);
-			$cadena=str_ireplace("--", "", $cadena);
-			$cadena=str_ireplace("^", "", $cadena);
-			$cadena=str_ireplace("<", "", $cadena);
-			$cadena=str_ireplace("[", "", $cadena);
-			$cadena=str_ireplace("]", "", $cadena);
-			$cadena=str_ireplace("==", "", $cadena);
-			$cadena=str_ireplace(";", "", $cadena);
-			$cadena=str_ireplace("::", "", $cadena);
-			$cadena=trim($cadena);
-			$cadena=stripslashes($cadena);
-			return $cadena;
-		} /*--  Fin Funcion --*/
+public static function limpiar_cadena($cadena) {
+    if (is_string($cadena)) {
+        $cadena = trim($cadena);
+        $cadena = stripslashes($cadena);
+        $cadena = str_ireplace("<script>", "", $cadena);
+        $cadena = str_ireplace("</script>", "", $cadena);
+        $cadena = str_ireplace("<script src", "", $cadena);
+        $cadena = str_ireplace("<script type=", "", $cadena);
+        $cadena = str_ireplace("SELECT * FROM", "", $cadena);
+        $cadena = str_ireplace("DELETE FROM", "", $cadena);
+        $cadena = str_ireplace("INSERT INTO", "", $cadena);
+        $cadena = str_ireplace("DROP TABLE", "", $cadena);
+        $cadena = str_ireplace("DROP DATABASE", "", $cadena);
+        $cadena = str_ireplace("TRUNCATE TABLE", "", $cadena);
+        $cadena = str_ireplace("SHOW TABLES;", "", $cadena);
+        $cadena = str_ireplace("SHOW DATABASES;", "", $cadena);
+        $cadena = str_ireplace("<?php", "", $cadena);
+        $cadena = str_ireplace("?>", "", $cadena);
+        $cadena = str_ireplace("--", "", $cadena);
+        $cadena = str_ireplace("^", "", $cadena);
+        $cadena = str_ireplace("<", "", $cadena);
+        $cadena = str_ireplace("[", "", $cadena);
+        $cadena = str_ireplace("]", "", $cadena);
+        $cadena = str_ireplace("==", "", $cadena);
+        $cadena = str_ireplace(";", "", $cadena);
+        $cadena = str_ireplace("::", "", $cadena);
+        $cadena = trim($cadena);
+        $cadena = stripslashes($cadena);
+    }
+    return $cadena;
+}
+		 /*--  Fin Funcion --*/
 
 
 		/*---------- Funcion verificar datos (expresion regular) ----------*/
@@ -223,6 +229,7 @@
             }
 		} /*--  Fin Funcion --*/
 
+		
 
 		/*---------- Funcion verificar fechas ----------*/
 		protected static function verificar_fecha($fecha){

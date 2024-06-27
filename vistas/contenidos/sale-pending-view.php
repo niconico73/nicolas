@@ -14,11 +14,7 @@
                 <i class="fas fa-cart-plus fa-fw"></i> &nbsp; Nueva venta
             </a>
         </li>
-        <li>
-            <a href="<?php echo SERVERURL; ?>sale-new/wholesale/">
-                <i class="fas fa-parachute-box fa-fw"></i> &nbsp; Venta por mayoreo
-            </a>
-        </li>
+       
         <li>
             <a href="<?php echo SERVERURL; ?>sale-list/">
                 <i class="fas fa-coins fa-fw"></i> &nbsp; Ventas realizadas
@@ -36,7 +32,7 @@
         </li>
         <li>
             <a href="<?php echo SERVERURL; ?>sale-search-code/">
-                <i class="fas fa-search-dollar fa-fw"></i> &nbsp; Buscar venta (Código)
+                <i class="fas fa-search-dollar fa-fw"></i> &nbsp; Buscar venta (Código o Cliente)
             </a>
         </li>
     </ul>	

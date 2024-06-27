@@ -101,6 +101,7 @@
             <p> &nbsp; </p>
         </div>
     </a>
+    
     <a href="<?php echo defined('SERVERURL') ? SERVERURL . 'report-sales/' : ''; ?>" class="tile">
         <div class="tile-tittle">Reportes</div>
         <div class="tile-icon">

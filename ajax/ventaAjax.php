@@ -56,8 +56,12 @@ if (isset($_POST['modulo_venta'])) {
             echo $ins_venta->eliminar_venta_controlador();
             break;
         
+        case 'editar_pago':
+            echo $ins_venta->editar_pago_controlador();
+            break;
+        
         default:
-            echo json_encode(array("success" => false, "message" => "M贸dulo de venta no v谩lido"));
+            echo json_encode(array("success" => false, "message" => "Módulo de venta no válido"));
             break;
     }
 } else {

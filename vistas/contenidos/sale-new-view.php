@@ -32,11 +32,7 @@
                     <i class="fas fa-cart-plus fa-fw"></i> &nbsp; Nueva venta
                 </a>
             </li>
-            <li>
-                <a href="<?php echo SERVERURL; ?>sale-new/wholesale/">
-                    <i class="fas fa-parachute-box fa-fw"></i> &nbsp; Venta por mayoreo
-                </a>
-            </li>
+           
         <?php } ?>
         <li>
             <a href="<?php echo SERVERURL; ?>sale-list/">
@@ -55,7 +51,7 @@
         </li>
         <li>
             <a href="<?php echo SERVERURL; ?>sale-search-code/">
-                <i class="fas fa-search-dollar fa-fw"></i> &nbsp; Buscar venta (Código)
+                <i class="fas fa-search-dollar fa-fw"></i> &nbsp; Buscar venta (Código o Cliente)
             </a>
         </li>
     </ul>
@@ -368,40 +364,7 @@
                         </div>
                     </div>
 
-                    <label>Metodo de Pago:</label>
-<div class="form-group text-center">
-    <div class="form-check form-check-inline">
-        <input class="form-check-input" type="radio" name="pago_banco" value="EFECTIVO" id="banco_efectivo" checked>
-        <label class="form-check-label" for="banco_efectivo">Efectivo</label>
-    </div>
-    <div class="form-check form-check-inline">
-        <input class="form-check-input" type="radio" name="pago_banco" value="YAPE" id="banco_yape">
-        <label class="form-check-label" for="banco_yape">Yape</label>
-    </div>
-    <div class="form-check form-check-inline">
-        <input class="form-check-input" type="radio" name="pago_banco" value="PLIM" id="banco_plim">
-        <label class="form-check-label" for="banco_plim">Plim</label>
-    </div>
-    <div class="form-check form-check-inline">
-        <input class="form-check-input" type="radio" name="pago_banco" value="BCP" id="banco_bcp">
-        <label class="form-check-label" for="banco_bcp">BCP</label>
-    </div>
-    <div class="form-check form-check-inline">
-        <input class="form-check-input" type="radio" name="pago_banco" value="INTERBANK" id="banco_interbank">
-        <label class="form-check-label" for="banco_interbank">Interbank</label>
-    </div>
-    <div class="form-check form-check-inline">
-        <input class="form-check-input" type="radio" name="pago_banco" value="BBVA" id="banco_bbva">
-        <label class="form-check-label" for="banco_bbva">BBVA</label>
-    </div>
-</div>
-
-<div class="form-group">
-    <label for="num_operacion">N° de operación:</label>
-    <input type="text" class="form-control" id="num_operacion" name="pago_numero_operacion">
-</div>
-
-<!--fin de metodo de pago-->
+                  
 
                     <div class="form-group">
                         <label for="venta_abono" class="bmd-label-floating" >Total pagado por cliente <?php echo CAMPO_OBLIGATORIO; ?></label>
