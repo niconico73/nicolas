@@ -2,6 +2,9 @@
     <h3 class="text-left text-uppercase">
         <i class="fas fa-cart-plus fa-fw"></i> &nbsp; Detalles de venta
     </h3>
+    <p class="text-justify">
+    	En el módulo VENTAS podrá realizar ventas de productos, puede usar lector de código de barras o hacerlo de forma manual digitando el código del producto (debe de configurar estas opciones en ajustes de su cuenta). También puede ver las ventas realizadas y buscar ventas en el sistema.
+	</p>
 </div>
 
 <div class="container-fluid">
@@ -36,7 +39,7 @@
                 <i class="fas fa-search-dollar fa-fw"></i> &nbsp; Buscar venta (Código)
             </a>
         </li>
-    </ul>	
+    </ul>
 </div>
 
 <div class="container-fluid form-neon">
@@ -217,7 +220,7 @@
                                     <td>'.MONEDA_SIMBOLO.number_format($pago['pago_monto'],MONEDA_DECIMALES,MONEDA_SEPARADOR_DECIMAL,MONEDA_SEPARADOR_MILLAR).' '.MONEDA_NOMBRE.'</td>
                                     <td>'.$pago['usuario_nombre']." ".$pago['usuario_apellido'].'</td>
                                     <td>Caja #'.$pago['caja_numero']." - ".$pago['caja_nombre'].'</td>
-
+                                </tr>
                                 ';
                                 $cc++;
                             }
@@ -227,9 +230,6 @@
                     ?>
                 </tbody>
             </table>
-            
-  </div>
-</div>
         </div>
         <?php if($datos_venta['venta_pagado']<$datos_venta['venta_total_final'] && $datos_venta['venta_tipo']="Credito"){ ?>
         <p class="text-center">
@@ -356,8 +356,8 @@
                 </div>
                 <div class="modal-body">
                     <input type="hidden" name="modulo_devolucion" value="venta">
-                    <input type="hidden" name="codigo_venta" id="codigo_venta" value="<?php echo $datos_venta['venta_codigo']; ?>">
-                    <input type="hidden" name="id_producto" id="id_producto" value="">
+                    <input type="hidden" name="devolucion_venta" id="devolucion_venta" value="<?php echo $datos_venta['venta_codigo']; ?>">
+                    <input type="hidden" name="devolucion_producto" id="devolucion_producto" value="">
                     <div class="container-fluid">
                         <div class="row">
                             <div class="col-12 col-md-6">
@@ -413,13 +413,13 @@
             producto.trim();
             descripcion.trim();
 
-            document.querySelector('#id_producto').value=producto;
+            document.querySelector('#devolucion_producto').value=producto;
             document.querySelector('#devolucion_descripcion').innerHTML=descripcion;
 
             $('#ModalReturn').modal('show');
         }
     </script>
-    <?php 
+    <?php
         }else{
             include "./vistas/inc/error_alert.php";
             echo '<p class="text-center">*** Es posible que la venta haya sido eliminada del sistema ***</p>';

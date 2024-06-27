@@ -1690,27 +1690,25 @@ error_reporting(E_ALL);
         public function agregar_pago_venta_controlador(){
 
             /*== Recuperando el codigo de la venta y monto ==*/
-            $venta_codigo = mainModel::limpiar_cadena($_POST['pago_codigo_reg']);
-            $pago_monto = mainModel::limpiar_cadena($_POST['pago_monto_reg']);
-            $pago_banco = mainModel::limpiar_cadena($_POST['pago_banco']); 
-            $num_operacion = mainModel::limpiar_cadena($_POST['pago_numero_operacion']);
-        
+            $venta_codigo=mainModel::limpiar_cadena($_POST['pago_codigo_reg']);
+            $pago_monto=mainModel::limpiar_cadena($_POST['pago_monto_reg']);
+
             /*== Comprobando venta ==*/
-            $check_venta = mainModel::ejecutar_consulta_simple("SELECT * FROM venta WHERE venta_codigo='$venta_codigo' AND venta_estado='Pendiente' AND venta_tipo='Credito'");
-            if($check_venta->rowCount() <= 0){
-                $alerta = [
-                    "Alerta" => "simple",
-                    "Titulo" => "Ocurrió un error inesperado",
-                    "Texto" => "No hemos encontrado en la base de datos la venta seleccionada para realizar el pago. También es posible que la venta ya haya sido cancelada o no es una venta al crédito por lo tanto no podemos agregar pagos",
-                    "Tipo" => "error"
-                ];
-                echo json_encode($alerta);
-                exit();
+			$check_venta=mainModel::ejecutar_consulta_simple("SELECT * FROM venta WHERE venta_codigo='$venta_codigo' AND venta_estado='Pendiente' AND venta_tipo='Credito'");
+			if($check_venta->rowCount()<=0){
+				$alerta=[
+					"Alerta"=>"simple",
+					"Titulo"=>"Ocurrió un error inesperado",
+					"Texto"=>"No hemos encontrado en la base de datos la venta seleccionada para realizar el pago. También es posible que la venta ya haya sido cancelada o no es una venta al crédito por lo tanto no podemos agregar pagos",
+					"Tipo"=>"error"
+				];
+				echo json_encode($alerta);
+				exit();
             }else{
-                $datos_venta = $check_venta->fetch();
+                $datos_venta=$check_venta->fetch();
             }
             $check_venta->closeCursor();
-            $check_venta = mainModel::desconectar($check_venta);
+            $check_venta=mainModel::desconectar($check_venta);
 
             /*== Comprobando pago ==*/
             if($pago_monto=="" || $pago_monto<=0){
@@ -1783,45 +1781,44 @@ error_reporting(E_ALL);
             $pago_fecha=date("Y-m-d");
             $pago_hora=date("h:i a");
 
-            $datos_pago = [
-                "pago_fecha" => $pago_fecha,
-                "pago_monto" => $movimiento_cantidad,
-                "venta_codigo" => $venta_codigo,
-                "usuario_id" => $_SESSION['id_svi'],
-                "caja_id" => $_SESSION['caja_svi'],
-                "pago_banco" => $pago_banco,
-                "pago_numero_operacion" => $pago_numero_operacion
+            /*== Preparando datos para enviarlos al modelo ==*/
+            $datos_pago=[
+                "pago_fecha"=>[
+                    "campo_marcador"=>":Fecha",
+                    "campo_valor"=>$pago_fecha
+                ],
+                "pago_monto"=>[
+                    "campo_marcador"=>":Monto",
+                    "campo_valor"=>$movimiento_cantidad
+                ],
+                "venta_codigo"=>[
+                    "campo_marcador"=>":Codigo",
+                    "campo_valor"=>$venta_codigo
+                ],
+                "usuario_id"=>[
+                    "campo_marcador"=>":Usuario",
+                    "campo_valor"=>$_SESSION['id_svi']
+                ],
+                "caja_id"=>[
+                    "campo_marcador"=>":Caja",
+                    "campo_valor"=>$_SESSION['caja_svi']
+                ]
             ];
-            
-            // Construir la consulta SQL (esta parte debe ir antes de guardar_datos)
-            $sql = "INSERT INTO pago (";
-            $columnas = "";
-            $valores = "";
-            
-            foreach ($datos_pago as $campo => $valor) {
-                $columnas .= $campo . ",";
-                $valores .= "?,";
+
+            $agregar_pago=mainModel::guardar_datos("pago",$datos_pago);
+
+            if($agregar_pago->rowCount()<1){
+                $alerta=[
+					"Alerta"=>"simple",
+					"Titulo"=>"Ocurrió un error inesperado",
+					"Texto"=>"No hemos podido agregar el pago, por favor intente nuevamente.",
+					"Tipo"=>"error"
+				];
+				echo json_encode($alerta);
+				exit();
             }
-            
-            $sql = rtrim($sql, ",") . ") VALUES (" . rtrim($valores, ",") . ")";
-            
-            // Imprimir consulta completa y valores (opcional, para depuración)
-            echo $sql; // Imprime la consulta completa
-            var_dump(array_values($datos_pago)); // Imprime los valores de los parámetros
-            
-            // Guardar los datos (ahora con la consulta y valores correctos)
-            
-            $agregar_pago = mainModel::guardar_datos("pago", $sql, array_values($datos_pago));
-            if ($agregar_pago === false) { // Verificar si hubo un error
-                $alerta = [
-                    "Alerta" => "simple",
-                    "Titulo" => "Ocurrió un error inesperado",
-                    "Texto" => "No hemos podido agregar el pago, por favor intente nuevamente.",
-                    "Tipo" => "error"
-                ];
-                echo json_encode($alerta);
-                exit();
-            }
+            $agregar_pago->closeCursor();
+            $agregar_pago=mainModel::desconectar($agregar_pago);
 
             /*== Preparando datos para enviarlos al modelo ==*/
             $datos_venta=[
