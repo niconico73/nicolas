@@ -31,55 +31,25 @@
     <form class="form-neon FormularioAjax" action="<?php echo SERVERURL; ?>ajax/clienteAjax.php" method="POST" data-form="save" autocomplete="off" >
         <input type="hidden" name="modulo_cliente" value="registrar">
         <fieldset>
-            <legend><i class="far fa-address-card"></i> &nbsp; Información personal</legend>
+        <legend><i class="far fa-address-card"></i> &nbsp; Información personal</legend>
             <div class="container-fluid">
                 <div class="row">
                     <div class="col-12 col-md-6">
-                        <div class="form-group">
-                            <label for="cliente_tipo_documento" class="bmd-label-floating">Tipo de documento <?php echo CAMPO_OBLIGATORIO; ?></label>
-                            <select class="form-control" name="cliente_tipo_documento_reg" id="cliente_tipo_documento">
-                                <option value="" selected="" >Seleccione una opción</option>
-                                <?php
-                                    echo $lc->generar_select(DOCUMENTOS_USUARIOS,"VACIO");
-                                ?>
-                            </select>
-                        </div>
-                    </div>
+                    <div class="form-group">
+    <label for="cliente_tipo_documento" class="bmd-label-floating">Tipo de documento <?php echo CAMPO_OBLIGATORIO; ?></label>
+  
+        <span id="tipo_documento_label"></span>
+        <select class="form-control ml-2" name="cliente_tipo_documento_reg" id="cliente_tipo_documento">
+            <option value="" selected="">Seleccione una opción</option>
+            <?php echo $lc->generar_select(DOCUMENTOS_USUARIOS, "VACIO"); ?>
+        </select>
+    </div>
+</div>
                     <div class="col-12 col-md-6">
     <div class="form-group">
         <label for="cliente_numero_documento" class="bmd-label-floating">Numero de documento <?php echo CAMPO_OBLIGATORIO; ?></label>
         <input type="text" pattern="[a-zA-Z0-9-]{7,30}" class="form-control" name="cliente_numero_documento_reg" id="cliente_numero_documento" maxlength="30">
-        <button type="button" class="btn btn-primary" onclick="extraerDatosCliente()">Extraer</button> </div>
 </div>
-<script>function extraerDatosCliente() {
-  const documentoInput = document.getElementById("cliente_numero_documento");
-  const documento = documentoInput.value.trim();
-
-  if (documento.length !== 11 && documento.length !== 8) {
-    alert("Ingrese un RUC o DNI válido (8 o 11 dígitos)");
-    return;
-  }
-
-  const tipoDocumento = documento.length === 11 ? 'sunat/ruc' : 'reniec/dni';
-
-  // URL de tu endpoint PHP
-  const apiUrl = `ajax/consultar_documento.php?numero=${documento}&tipo=${tipoDocumento}`;
-
-  fetch(apiUrl)
-    .then((response) => response.json())
-    .then((data) => {
-      if (data.success) {
-        // Llenar los campos del formulario con los datos obtenidos
-        // ... (ajusta según la estructura de la respuesta de apis.net.pe)
-      } else {
-        alert("Error al consultar el RUC/DNI: " + data.message);
-      }
-    })
-    .catch((error) => {
-      alert("Error en la petición: " + error);
-    });
-}
-</script>
                     <div class="col-12 col-md-6">
                         <div class="form-group">
                             <label for="cliente_nombre" class="bmd-label-floating">Nombres <?php echo CAMPO_OBLIGATORIO; ?></label>
@@ -150,4 +120,30 @@
             <small>Los campos marcados con <?php echo CAMPO_OBLIGATORIO; ?> son obligatorios</small>
         </p>
     </form>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var select = document.getElementById('cliente_tipo_documento');
+        var label = document.getElementById('tipo_documento_label');
+
+        select.addEventListener('change', function() {
+            var selectedOption = select.options[select.selectedIndex];
+            var selectedValue = selectedOption.value;
+
+            switch (selectedValue) {
+                case '1':
+                    label.textContent = 'DNI';
+                    break;
+                case '6':
+                    label.textContent = 'RUC';
+                    break;
+                case '4':
+                    label.textContent = 'Carnet de extranjería';
+                    break;
+                default:
+                    label.textContent = '';
+                    break;
+            }
+        });
+    });
+</script>
 </div>

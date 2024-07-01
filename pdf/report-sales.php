@@ -1,72 +1,44 @@
 <?php
-
 $peticion_ajax = true;
 $fecha_inicio = (isset($_GET['fi'])) ? $_GET['fi'] : "";
 $fecha_final = (isset($_GET['ff'])) ? $_GET['ff'] : "";
-$usuario_id = (isset($_GET['usuario_id'])) ? $_GET['usuario_id'] : "";
+$usuario_id = (isset($_GET['usuario'])) ? $_GET['usuario'] : "";
 $error_fechas = "";
 
-/*---------- Incluyendo configuraciones ----------*/
 require_once "../config/APP.php";
+require_once "../controladores/ventaControlador.php";
+require_once __DIR__ . "/../pdf/fpdf.php"; 
 
-function verificar_fecha($fecha)
-{
+function verificar_fecha($fecha) {
     $valores = explode('-', $fecha);
-    if (count($valores) == 3 && checkdate($valores[1], $valores[2], $valores[0])) {
-        return false;
-    } else {
-        return true;
+    return !(count($valores) == 3 && checkdate($valores[1], $valores[2], $valores[0]));
+}
+
+if (verificar_fecha($fecha_inicio) || verificar_fecha($fecha_final) || $fecha_inicio > $fecha_final) {
+    $error_fechas = "Error en las fechas: ";
+    if (verificar_fecha($fecha_inicio) || verificar_fecha($fecha_final)) {
+        $error_fechas .= "Ha introducido fechas que no son correctas. ";
+    }
+    if ($fecha_inicio > $fecha_final) {
+        $error_fechas .= "La fecha de inicio no puede ser mayor que la fecha final.";
     }
 }
 
-if (verificar_fecha($fecha_inicio) || verificar_fecha($fecha_final)) {
-    $error_fechas .= "Ha introducido fecha que no son correctas. ";
-}
-
-if ($fecha_inicio > $fecha_final) {
-    $error_fechas .= "La fecha de inicio no puede ser mayor que la fecha final";
-}
-
 if ($error_fechas == "") {
-
-    /*---------- Instancia al controlador venta ----------*/
-    require_once "../controladores/ventaControlador.php";
     $ins_venta = new ventaControlador();
+    $datos_empresa = $ins_venta->datos_tabla("Normal", "empresa LIMIT 1", "*", 0)->fetch();
 
-    /*---------- Seleccion de datos de la empresa ----------*/
-    $datos_empresa = $ins_venta->datos_tabla("Normal", "empresa LIMIT 1", "*", 0);
-    $datos_empresa = $datos_empresa->fetch();
-
-    require "./code128.php";
-
-    $pdf = new PDF_Code128('P', 'mm', 'Letter');
-    $pdf->SetMargins(17, 17, 17);
+    $pdf = new FPDF('P', 'mm', 'Letter');
     $pdf->AddPage();
-    $pdf->Image(SERVERURL . 'vistas/assets/img/logo.png', 165, 12, 35, 35, 'PNG');
-
     $pdf->SetFont('Arial', 'B', 16);
-    $pdf->SetTextColor(0, 0, 0); // Cambiar a color negro
-    $pdf->Cell(150, 10, mb_convert_encoding(strtoupper($datos_empresa['empresa_nombre']), 'ISO-8859-1', 'UTF-8'), 0, 0, 'L');
-
-    $pdf->Ln(9);
-
+    $pdf->Cell(0, 10, mb_strtoupper($datos_empresa['empresa_nombre'], 'UTF-8'), 0, 1, 'C');
     $pdf->SetFont('Arial', '', 10);
-    $pdf->SetTextColor(0, 0, 0); // Cambiar a color negro
-    $pdf->Cell(150, 9, mb_convert_encoding($datos_empresa['empresa_tipo_documento'] . ": " . $datos_empresa['empresa_numero_documento'], 'ISO-8859-1', 'UTF-8'), 0, 0, 'L');
+    $pdf->Cell(0, 5, $datos_empresa['empresa_tipo_documento'] . ": " . $datos_empresa['empresa_numero_documento'], 0, 1, 'C');
+    $pdf->Cell(0, 5, $datos_empresa['empresa_direccion'], 0, 1, 'C');
+    $pdf->Cell(0, 5, "Telefono: " . $datos_empresa['empresa_telefono'], 0, 1, 'C');
+    $pdf->Cell(0, 5, "Email: " . $datos_empresa['empresa_email'], 0, 1, 'C');
+    $pdf->Ln(10);
 
-    $pdf->Ln(5);
-
-    $pdf->Cell(150, 9, mb_convert_encoding($datos_empresa['empresa_direccion'], 'ISO-8859-1', 'UTF-8'), 0, 0, 'L');
-
-    $pdf->Ln(5);
-
-    $pdf->Cell(150, 9, mb_convert_encoding("Teléfono: " . $datos_empresa['empresa_telefono'], 'ISO-8859-1', 'UTF-8'), 0, 0, 'L');
-
-    $pdf->Ln(5);
-
-    $pdf->Cell(150, 9, mb_convert_encoding("Email: " . $datos_empresa['empresa_email'], 'ISO-8859-1', 'UTF-8'), 0, 0, 'L');
-
-    $pdf->Ln(15);
     $pdf->SetFont('Arial', 'B', 12);
 
 // Verificar si se seleccionó un usuario o todos
@@ -81,10 +53,10 @@ if (!empty($usuario_id) && $usuario_id !== "all") {
 
 $pdf->Cell(0, 10, $titulo_reporte, 0, 1, 'C'); // Mostrar el título dinámico
 $pdf->Ln(5);
-    // Tabla de ventas
+  // Tabla de ventas
 $pdf->SetFont('Arial', 'B', 8); // Tamaño de fuente más pequeño
 
-// Encabezados de las columnas
+// Encabezados de las columnas con fondo negro y letras blancas
 $pdf->SetFillColor(0, 0, 0); // Color de fondo negro
 $pdf->SetTextColor(255, 255, 255); // Color de letras blanco
 
@@ -98,9 +70,6 @@ $pdf->Cell(35, 8, 'N Operacion', 1, 1, 'C', true); // Fondo negro para el encabe
 
 $pdf->SetFont('Arial', '', 9); // Restaurar la fuente normal
 $pdf->SetTextColor(0, 0, 0); // Restaurar el color de texto a negro para las celdas restantes
-
-// Continuar con el contenido de la tabla
-
 
     // Consulta SQL con LEFT JOIN para pagos y filtro por usuario
     $consulta = "SELECT v.venta_id, v.venta_codigo, CONCAT(c.cliente_nombre, ' ', c.cliente_apellido) AS cliente, 

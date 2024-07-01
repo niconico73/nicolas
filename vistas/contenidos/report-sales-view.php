@@ -90,7 +90,7 @@ include "./vistas/inc/admin_security.php";
                             </select>
                         </div>
                     </div>
-<div class="col-12 col-md-4">
+                    <div class="col-12 col-md-4">
                         <div class="form-group">
                             <label for="fecha_inicio">Fecha inicial (día/mes/año)</label>
                             <input type="date" class="form-control" name="fecha_inicio" id="fecha_inicio" maxlength="30">
@@ -112,7 +112,6 @@ include "./vistas/inc/admin_security.php";
             </div>
         </div>
     </div>
-</div>
 </div>
 
 <script>
@@ -136,12 +135,15 @@ function generar_reporte() {
             fecha_inicio = fecha_inicio.trim();
             fecha_final = fecha_final.trim();
 
-            if (usuario === "all") {
-                usuario = "";
-            }
-
             if (fecha_inicio && fecha_final) {
-                url = "<?php echo SERVERURL; ?>pdf/report-sales.php?usuario=" + encodeURIComponent(usuario) + "&fi=" + fecha_inicio + "&ff=" + fecha_final;
+                // Construir URL basada en la selección de usuario
+                let url = "<?php echo SERVERURL; ?>pdf/report-sales.php";
+                if (usuario !== "") {
+                    url += "?usuario=" + encodeURIComponent(usuario);
+                }
+                url += "&fi=" + fecha_inicio + "&ff=" + fecha_final;
+
+                // Abrir en una nueva ventana
                 window.open(url, 'Imprimir reporte de ventas', 'width=820,height=720,top=0,left=100,menubar=NO,toolbar=YES');
             } else {
                 Swal.fire({
@@ -155,43 +157,41 @@ function generar_reporte() {
     });
 }
 
-// ... (resto de tus funciones JavaScript)
+function generar_reporte_totales() {
+    Swal.fire({
+        title: '¿Quieres generar el reporte de totales?',
+        text: "La generación del reporte PDF puede tardar unos minutos para completarse",
+        type: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Si, generar',
+        cancelButtonText: 'No, cancelar'
+    }).then((result) => {
+        if (result.value) {
+            let usuario_id = document.querySelector('#usuario_id').value;
+            let fecha_inicio = document.querySelector('#fecha_inicio').value;
+            let fecha_final = document.querySelector('#fecha_final').value;
 
+            usuario_id = usuario_id.trim();
+            fecha_inicio = fecha_inicio.trim();
+            fecha_final = fecha_final.trim();
 
-    function generar_reporte_totales(){
-        Swal.fire({
-            title: '¿Quieres generar el reporte de totales?',
-            text: "La generación del reporte PDF puede tardar unos minutos para completarse",
-            type: 'question',
-            showCancelButton: true,
-            confirmButtonColor: '#3085d6',
-            cancelButtonColor: '#d33',
-            confirmButtonText: 'Si, generar',
-            cancelButtonText: 'No, cancelar'
-        }).then((result) => {
-            if(result.value){
-                let usuario_id = document.querySelector('#usuario_id').value;
-                let fecha_inicio = document.querySelector('#fecha_inicio').value;
-                let fecha_final = document.querySelector('#fecha_final').value;
+            if (usuario_id !== "" && fecha_inicio !== "" && fecha_final !== "") {
+                // Construir URL para el reporte de totales
+                let url = "<?php echo SERVERURL; ?>pdf/report-salestotal.php?usuario_id=" + usuario_id + "&fi=" + fecha_inicio + "&ff=" + fecha_final;
 
-                usuario_id.trim();
-                fecha_inicio.trim();
-                fecha_final.trim();
-
-                if(usuario_id != "" && fecha_inicio != "" && fecha_final != ""){
-                    url = "<?php echo SERVERURL; ?>pdf/report-salestotal.php?usuario_id=" + usuario_id + "&fi=" + fecha_inicio + "&ff=" + fecha_final;
-                    window.open(url, 'Imprimir reporte de totales', 'width=820,height=720,top=0,left=100,menubar=NO,toolbar=YES');
-                }else{
-                    Swal.fire({
-                        title: 'Ocurrió un error inesperado',
-                        text: 'Debe seleccionar un usuario y proporcionar la fecha de inicio y final para generar el reporte de totales.',
-                        type: 'error',
-                        confirmButtonText: 'Aceptar'
-                    });
-                }
+                // Abrir en una nueva ventana
+                window.open(url, 'Imprimir reporte de totales', 'width=820,height=720,top=0,left=100,menubar=NO,toolbar=YES');
+            } else {
+                Swal.fire({
+                    title: 'Ocurrió un error inesperado',
+                    text: 'Debe seleccionar un usuario y proporcionar la fecha de inicio y final para generar el reporte de totales.',
+                    type: 'error',
+                    confirmButtonText: 'Aceptar'
+                });
             }
-        });
-    }
-
+        }
+    });
+}
 </script>
-

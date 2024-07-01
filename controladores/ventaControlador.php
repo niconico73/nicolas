@@ -1509,6 +1509,8 @@ if ($peticion_ajax) {
                 $agregar_pago->closeCursor();
 			    $agregar_pago=mainModel::desconectar($agregar_pago);
             }
+          
+
 
             /*== Vaciando variables de sesion ==*/
             unset($_SESSION['venta_total']);
@@ -1530,178 +1532,235 @@ if ($peticion_ajax) {
             echo json_encode($alerta);
         } /*-- Fin controlador --*/
 
+/*---------- Controlador paginador ventas ----------*/
+public function paginador_venta_controlador($pagina, $registros, $url, $fecha_inicio, $fecha_final, $id_usuario = null) {
+    $pagina = mainModel::limpiar_cadena($pagina);
+    $registros = mainModel::limpiar_cadena($registros);
+    $url = mainModel::limpiar_cadena($url);
+    $tipo = $url;
+    
+    $url = SERVERURL . $url . "/";
+    
+    $fecha_inicio = mainModel::limpiar_cadena($fecha_inicio);
+    $fecha_final = mainModel::limpiar_cadena($fecha_final);
+    
+    // Agregar un nuevo parámetro para el ID del vendedor (opcional)
+    $id_vendedor = mainModel::limpiar_cadena($_GET['vendedor'] ?? null); 
+    
+    $tabla = ""; // Inicializa la variable $tabla aquí
 
-     /*---------- Controlador paginador ventas ----------*/
-     public function paginador_venta_controlador($pagina, $registros, $url, $fecha_inicio, $fecha_final, $id_usuario = null) {
+    $pagina = ($pagina > 0) ? (int) $pagina : 1;
+    $inicio = ($pagina > 0) ? (($pagina * $registros) - $registros) : 0;
 
-        $pagina = mainModel::limpiar_cadena($pagina);
-        $registros = mainModel::limpiar_cadena($registros);
-        $url = mainModel::limpiar_cadena($url);
-        $tipo = $url;
-        $url = SERVERURL . $url . "/";
-        $fecha_inicio = mainModel::limpiar_cadena($fecha_inicio);
-        $fecha_final = mainModel::limpiar_cadena($fecha_final);
-        $tabla = "";
-    
-        $pagina = (isset($pagina) && $pagina > 0) ? (int)$pagina : 1;
-        $inicio = ($pagina > 0) ? (($pagina * $registros) - $registros) : 0;
-    
-        if ($tipo == "sale-search-date") {
-            if (mainModel::verificar_fecha($fecha_inicio) || mainModel::verificar_fecha($fecha_final)) {
-                return '
-                    <div class="alert alert-danger text-center" role="alert">
-                        <p><i class="fas fa-exclamation-triangle fa-5x"></i></p>
-                        <h4 class="alert-heading">¡Ocurrió un error inesperado!</h4>
-                        <p class="mb-0">Lo sentimos, no podemos realizar la búsqueda ya que al parecer ha ingresado una fecha incorrecta.</p>
-                    </div>
-                ';
-            }
+    $campos_tablas = "venta.venta_id,venta.venta_codigo,venta.venta_tipo,venta.venta_fecha,venta.venta_hora,venta.venta_total_final,venta.venta_estado,venta.usuario_id,venta.cliente_id,venta.caja_id,usuario.usuario_id,usuario.usuario_nombre,usuario.usuario_apellido,cliente.cliente_id,cliente.cliente_nombre,cliente.cliente_apellido";
+
+
+    // Variables para controlar la construcción de la consulta
+    $whereClause = [];
+    $orderByClause = " ORDER BY venta.venta_id DESC";
+
+    // Consulta base para obtener todas las ventas
+    $consulta = "SELECT SQL_CALC_FOUND_ROWS $campos_tablas FROM venta INNER JOIN cliente ON venta.cliente_id=cliente.cliente_id INNER JOIN usuario ON venta.usuario_id=usuario.usuario_id";
+
+    // Si la página es "sale-pending", mostrar solo las ventas pendientes
+    if ($tipo == "sale-pending") {
+        $whereClause[] = "venta.venta_estado = 'Pendiente'";
+    }
+
+    // Si el tipo es "sale-search-date" y se proporcionan fechas de inicio y final
+    if ($tipo == "sale-search-date" && $fecha_inicio != "" && $fecha_final != "") {
+        $whereClause[] = "(venta.venta_fecha BETWEEN '$fecha_inicio' AND '$fecha_final')";
+    } elseif ($tipo == "sale-search-code" && $fecha_inicio != "") {
+        // Si el tipo es "sale-search-code" y se proporciona un código de venta
+        $whereClause[] = "(venta.venta_codigo='$fecha_inicio')";
+    }
+
+    // Filtrar por usuario si se proporciona un id de usuario
+    if ($id_vendedor) {
+        $consulta .= " AND venta.usuario_id = '$id_vendedor'";
+    }
+
+    // Agregar un nuevo parámetro para el ID del vendedor (opcional)
+    $id_vendedor = mainModel::limpiar_cadena($_GET['vendedor'] ?? null); 
+
+    // Filtrar por vendedor si se proporciona un ID
+    if ($id_vendedor) {
+        $whereClause[] = "venta.usuario_id = '$id_vendedor'";
+    }
+
+    // Construir la cláusula WHERE
+    if (!empty($whereClause)) {
+        $consulta .= " WHERE " . implode(" AND ", $whereClause);
+    }
+
+    // Agregar la cláusula ORDER BY (siempre se ordena por ID descendente)
+    $consulta .= $orderByClause;
+
+    // Agregar LIMIT solo si no es "sale-pending" (para mostrar todos los pendientes)
+    if ($tipo != "sale-pending") {
+        $consulta .= " LIMIT $inicio,$registros";
+    }
+
+    $conexion = mainModel::conectar();
+
+    $datos = $conexion->query($consulta);
+    $datos = $datos->fetchAll();
+
+    $total = $conexion->query("SELECT FOUND_ROWS()");
+    $total = (int) $total->fetchColumn();
+
+    $Npaginas = ceil($total / $registros);
+
+    // Crear un elemento select para elegir el vendedor (antes de la tabla)
+    $tabla = '
+    <script>
+  function filtrarPorVendedor(usuarioId) {
+        // Obtén la URL actual
+        const urlActual = new URL(window.location.href);
+
+        // Crea una nueva URL base sin parámetros
+        const urlBase = new URL(urlActual.origin + urlActual.pathname);
+
+        // Agrega el parámetro "vendedor" si se seleccionó un vendedor
+        if (vendedorId) {
+            urlBase.searchParams.set("vendedor", vendedorId);
         }
-    
-        $campos_tablas = "venta.venta_id, venta.venta_codigo, venta.venta_tipo, venta.venta_fecha, venta.venta_hora, venta.venta_total_final, venta.venta_estado, venta.usuario_id, venta.cliente_id, venta.caja_id, usuario.usuario_id, usuario.usuario_nombre, usuario.usuario_apellido, cliente.cliente_id, cliente.cliente_nombre, cliente.cliente_apellido";
-    
-        // Ajustamos la consulta para filtrar por ID de usuario si se proporciona
-        if ($tipo == "sale-search-date" && $fecha_inicio != "" && $fecha_final != "") {
-            $condicion_usuario = ($id_usuario !== null) ? " AND venta.usuario_id = '$id_usuario' " : "";
-            $consulta = "SELECT SQL_CALC_FOUND_ROWS $campos_tablas FROM venta INNER JOIN cliente ON venta.cliente_id = cliente.cliente_id INNER JOIN usuario ON venta.usuario_id = usuario.usuario_id WHERE (venta.venta_fecha BETWEEN '$fecha_inicio' AND '$fecha_final') $condicion_usuario ORDER BY venta.venta_id DESC LIMIT $inicio, $registros";
-        } elseif ($tipo == "sale-search-code" && $fecha_inicio != "") {
-            $condicion_usuario = ($id_usuario !== null) ? " AND venta.usuario_id = '$id_usuario' " : "";
-            $consulta = "SELECT SQL_CALC_FOUND_ROWS $campos_tablas FROM venta INNER JOIN cliente ON venta.cliente_id = cliente.cliente_id INNER JOIN usuario ON venta.usuario_id = usuario.usuario_id WHERE (venta.venta_codigo LIKE '%$fecha_inicio%' OR cliente.cliente_nombre LIKE '%$fecha_inicio%' OR cliente.cliente_apellido LIKE '%$fecha_inicio%') $condicion_usuario ORDER BY venta.venta_id DESC LIMIT $inicio, $registros";
-        } elseif ($tipo == "sale-pending") {
-            $condicion_usuario = ($id_usuario !== null) ? " AND venta.usuario_id = '$id_usuario' " : "";
-            $consulta = "SELECT SQL_CALC_FOUND_ROWS $campos_tablas FROM venta INNER JOIN cliente ON venta.cliente_id = cliente.cliente_id INNER JOIN usuario ON venta.usuario_id = usuario.usuario_id WHERE (venta.venta_estado = 'Pendiente') $condicion_usuario ORDER BY venta.venta_id DESC LIMIT $inicio, $registros";
-        } else {
-            $condicion_usuario = ($id_usuario !== null) ? " AND venta.usuario_id = '$id_usuario' " : "";
-            $consulta = "SELECT SQL_CALC_FOUND_ROWS $campos_tablas FROM venta INNER JOIN cliente ON venta.cliente_id = cliente.cliente_id INNER JOIN usuario ON venta.usuario_id = usuario.usuario_id $condicion_usuario ORDER BY venta.venta_id DESC LIMIT $inicio, $registros";
+
+        // Mantén el parámetro "pagina" si existe
+        const paginaActual = urlActual.searchParams.get("pagina");
+        if (paginaActual) {
+            urlBase.searchParams.set("pagina", paginaActual);
         }
-    
-        $conexion = mainModel::conectar();
-        $datos = $conexion->query($consulta);
-        $datos = $datos->fetchAll();
-        $total = $conexion->query("SELECT FOUND_ROWS()");
-        $total = (int)$total->fetchColumn();
-        $Npaginas = ceil($total / $registros);
-    
-        ### Cuerpo de la tabla ###
-        $tabla .= '
-            <div class="table-responsive">
-            <table class="table table-dark table-sm">
-                <thead>
-                    <tr class="text-center roboto-medium">
-                        <th>#</th>
-                        <th>NRO.</th>
-                        <th>CODIGO</th>
-                        <th>FECHA</th>
-                        <th>CLIENTE</th>
-                        <th>VENDEDOR</th>
-                        <th>TOTAL</th>
-                        <th>ESTADO</th>
-                        <th><i class="fas fa-tools"></i>&nbsp; OPCIONES</th>
-                    </tr>
-                </thead>
-                <tbody>
-        ';
-    
-        if ($total >= 1 && $pagina <= $Npaginas) {
-            $contador = $inicio + 1;
-            $pag_inicio = $inicio + 1;
-            foreach ($datos as $rows) {
-                $tabla .= '
-                    <tr class="text-center">
-                        <td>' . $contador . '</td>
-                        <td>' . $rows['venta_id'] . '</td>
-                        <td>' . $rows['venta_codigo'] . '</td>
-                        <td>' . date("d-m-Y", strtotime($rows['venta_fecha'])) . ' ' . $rows['venta_hora'] . '</td>
-                        <td>' . $rows['cliente_nombre'] . ' ' . $rows['cliente_apellido'] . '</td>
-                        <td>' . $rows['usuario_nombre'] . ' ' . $rows['usuario_apellido'] . '</td>
-                        <td>' . MONEDA_SIMBOLO . number_format($rows['venta_total_final'], MONEDA_DECIMALES, MONEDA_SEPARADOR_DECIMAL, MONEDA_SEPARADOR_MILLAR) . ' ' . MONEDA_NOMBRE . '</td>
-                ';
-                if ($rows['venta_estado'] == "Cancelado") {
-                    $tabla .= '<td><span class="badge badge-secondary">' . $rows['venta_estado'] . '</span></td>';
-                } else {
-                    $tabla .= '<td><span class="badge badge-warning">' . $rows['venta_estado'] . '</span></td>';
-                }
-                $tabla .= '
-                        <td>
+
+        // Redirige a la nueva URL base
+        window.location.href = urlBase.toString();
+    }
+</script>
+   <div class="form-group">
+    <label for="vendedor">Filtrar por Vendedor:</label>
+    <select class="form-control" id="vendedor" onchange="filtrarPorVendedor(this.value); return false;"> 
+        <option value="">Todos los Vendedores</option>';
+
+    // Obtener la lista de vendedores desde la base de datos
+    $vendedores = mainModel::ejecutar_consulta_simple("SELECT usuario_id, usuario_nombre, usuario_apellido FROM usuario");
+    foreach ($vendedores as $vendedor) {
+        $selected = ($id_vendedor == $vendedor['usuario_id']) ? 'selected' : '';
+        $tabla .= '<option value="' . $vendedor['usuario_id'] . '" ' . $selected . '>'
+                . $vendedor['usuario_nombre'] . ' ' . $vendedor['usuario_apellido']
+                . '</option>';
+    }
+    $tabla .= '</select></div>';
+
+
+
+    // Cuerpo de la tabla
+    $tabla .= '<div class="table-responsive">
+                    <table class="table table-dark table-sm">
+                        <thead>
+                            <tr class="text-center roboto-medium">
+                                <th>#</th>
+                                <th>NRO.</th>
+                                <th>CODIGO</th>
+                                <th>FECHA</th>
+                                <th>CLIENTE</th>
+                                <th>VENDEDOR</th>
+                                <th>TOTAL</th>
+                                <th>ESTADO</th>
+                                <th><i class="fas fa-tools"></i>&nbsp; OPCIONES</th>
+                                <th>¿FACTURADO?</th>
+                            </tr>
+                        </thead>
+                        <tbody>';
+
+
+    if($total >= 1 && $pagina <= $Npaginas){
+        $contador = $inicio + 1;
+        $pag_inicio = $inicio + 1;
+        foreach($datos as $rows){
+            $tabla .= '<tr class="text-center">
+                            <td>'.$contador.'</td>
+                            <td>'.$rows['venta_id'].'</td>
+                            <td>'.$rows['venta_codigo'].'</td>
+                            <td>'.date("d-m-Y", strtotime($rows['venta_fecha'])).' '.$rows['venta_hora'].'</td>
+                            <td>'.$rows['cliente_nombre'].' '.$rows['cliente_apellido'].'</td>
+                            <td>'.$rows['usuario_nombre'].' '.$rows['usuario_apellido'].'</td>
+                            <td>'.MONEDA_SIMBOLO.number_format($rows['venta_total_final'], MONEDA_DECIMALES, MONEDA_SEPARADOR_DECIMAL, MONEDA_SEPARADOR_MILLAR).' '.MONEDA_NOMBRE.'</td>';
+                            if($rows['venta_estado'] == "Cancelado"){
+                                $tabla .= '<td><span id="estadoVenta_' . $rows['venta_id'] . '" class="badge badge-secondary">'.$rows['venta_estado'].'</span></td>';
+                            } elseif($rows['venta_estado'] == "Impreso") {
+                                $tabla .= '<td><span id="estadoVenta_' . $rows['venta_id'] . '" class="badge badge-success">'.$rows['venta_estado'].'</span></td>'; // Clase badge-success para verde
+                            } else {
+                                $tabla .= '<td><span id="estadoVenta_' . $rows['venta_id'] . '" class="badge badge-warning">'.$rows['venta_estado'].'</span></td>';
+                            }
+
+            $tabla .= '<td>
                             <div class="btn-group" role="group" aria-label="Options" style="margin: 0;">
-                                <a class="btn btn-primary btn-sale-options" href="' . SERVERURL . 'sale-detail/' . $rows['venta_codigo'] . '/" data-toggle="popover" data-trigger="hover" title="Detalle venta Nro. ' . $rows['venta_id'] . '" data-content="Detalles, pagos & devoluciones de venta Nro.' . $rows['venta_id'] . ' - código: ' . $rows['venta_codigo'] . '">
-                                    <i class="fas fa-cart-plus fa-fw"></i>
+                                <a class="btn btn-primary btn-sale-options" href="'.SERVERURL.'sale-detail/'.$rows['venta_codigo'].'/" data-toggle="popover" data-trigger="hover" title="Detalle venta Nro. '.$rows['venta_id'].'" data-content="Detalles, pagos & devoluciones de venta Nro.'.$rows['venta_id'].' - código: '.$rows['venta_codigo'].'">
+                                    <i class="fas fa-cart-plus fa-fw" style="color: #FF3333;"></i>
                                 </a>
-                                <button type="button" class="btn btn-info btn-sale-options" onclick="print_invoice(\'' . SERVERURL . 'pdf/invoice.php?code=' . $rows['venta_codigo'] . '\')" data-toggle="popover" data-trigger="hover" title="Imprimir factura Nro. ' . $rows['venta_id'] . '" data-content="CÓDIGO: ' . $rows['venta_codigo'] . '">
+                                <button type="button" class="btn btn-info btn-sale-options" onclick="print_invoice(\''.SERVERURL.'pdf/invoice.php?code='.$rows['venta_codigo'].'\')" data-toggle="popover" data-trigger="hover" title="Imprimir factura Nro. '.$rows['venta_id'].'" data-content="CÓDIGO: '.$rows['venta_codigo'].'">
                                     <i class="fas fa-file-invoice-dollar fa-fw"></i>
-                                </button>
-                                <button type="button" class="btn btn-info btn-sale-options" onclick="print_ticket(\'' . SERVERURL . 'pdf/ticket_' . THERMAL_PRINT_SIZE . 'mm.php?code=' . $rows['venta_codigo'] . '\')" data-toggle="popover" data-trigger="hover" title="Imprimir Boleta Nro. ' . $rows['venta_id'] . '" data-content="CÓDIGO: ' . $rows['venta_codigo'] . '">
-                                    <i class="fas fa-receipt fa-fw"></i>
                                 </button>';
-                if ($_SESSION['cargo_svi'] == "Administrador") {
-                    $tabla .= '<form class="FormularioAjax" action="' . SERVERURL . 'ajax/ventaAjax.php" method="POST" data-form="delete" enctype="multipart/form-data" autocomplete="off">
-                                    <input type="hidden" name="venta_codigo_del" value="' . mainModel::encryption($rows['venta_codigo']) . '">
-                                    <input type="hidden" name="modulo_venta" value="eliminar_venta">
-                                    <button type="submit" class="btn btn-warning btn-sale-options" data-toggle="popover" data-trigger="hover" title="Eliminar venta Nro. ' . $rows['venta_id'] . '" data-content="CÓDIGO: ' . $rows['venta_codigo'] . '">
-                                        <i class="far fa-trash-alt"></i>
-                                    </button>
-                                </form>';
-                }
-                $tabla .= '
-                            </div>
+                              // Verificar si el usuario es administrador antes de mostrar el botón de ticket
+if ($_SESSION['cargo_svi'] == "Administrador") {
+    $tabla .= '<button type="button" class="btn btn-info btn-sale-options" onclick="print_ticket(\''.SERVERURL.'pdf/ticket_'.THERMAL_PRINT_SIZE.'mm.php?code='.$rows['venta_codigo'].'\')" data-toggle="popover" data-trigger="hover" title="Imprimir Boleta Nro. '.$rows['venta_id'].'" data-content="CÓDIGO: '.$rows['venta_codigo'].'">
+                <i class="fas fa-receipt fa-fw" style="color: black;"></i>
+              </button>';}
+
+            if($_SESSION['cargo_svi'] == "Administrador"){
+                $tabla .= '<form class="FormularioAjax" action="'.SERVERURL.'ajax/ventaAjax.php" method="POST" data-form="delete" enctype="multipart/form-data" autocomplete="off">
+                                <input type="hidden" name="venta_codigo_del" value="'.mainModel::encryption($rows['venta_codigo']).'">
+                                <input type="hidden" name="modulo_venta" value="eliminar_venta">
+                                <button type="submit" class="btn btn-warning btn-sale-options" data-toggle="popover" data-trigger="hover" title="Eliminar venta Nro. '.$rows['venta_id'].'" data-content="CÓDIGO: '.$rows['venta_codigo'].'">
+                                    <i class="far fa-trash-alt"></i>
+                                </button>
+                            </form>'; }
+                            $tabla .= '<td><div class="class="btn btn-warning btn-sale-options">
+    <select class="form-control form-control-sm" onchange="actualizarEstadoFactura(this, ' . $rows['venta_id'] . ')">
+        <option value="No Facturado" ' . ($rows['venta_estado'] != 'Impreso' ? 'selected' : '') . '>No Facturado</option>
+        <option value="Facturado" ' . ($rows['venta_estado'] == 'Impreso' ? 'selected' : '') . '>Facturado</option>
+    </select>
+</td>';
+            $tabla .= '</div>
                         </td>
-                    </tr>
-                ';
-                $contador++;
-            }
+                    </tr>';
+            $contador++;
+        }
+        $pag_final = $contador - 1;
+    } else {
+        if($total >= 1){
+            $tabla .= '<tr class="text-center">
+                            <td colspan="11">
+                                <a href="'.$url.'" class="btn btn-raised btn-primary btn-sm">
+                                    Haga clic acá para recargar el listado
+                                </a>
+                            </td>
+                        </tr>';
         } else {
-            if ($total >= 1) {
-                $tabla .= '
-                    <tr class="text-center">
-                        <td colspan="9">
-                            <a href="' . $url . '" class="btn btn-raised btn-primary btn-sm">Haga clic aquí para recargar el listado</a>
-                        </td>
-                    </tr>
-                ';
-            } else {
-                $tabla .= '
-                    <tr class="text-center">
-                        <td colspan="9">No hay registros en esta sección</td>
-                    </tr>
-                ';
-            }
+            $tabla .= '<tr class="text-center">
+                            <td colspan="11">
+                                No hay registros en el sistema
+                            </td>
+                        </tr>';
         }
-    
-        $tabla .= '</tbody></table></div>';
-    
-        if ($total >= 1 && $pagina <= $Npaginas) {
-            $tabla .= '
-                <nav aria-label="Page navigation example">
-                    <ul class="pagination justify-content-center pagination-sm">';
-            
-            if ($pagina == 1) {
-                $tabla .= '<li class="page-item disabled"><a class="page-link">Anterior</a></li>';
-            } else {
-                $tabla .= '<li class="page-item"><a class="page-link" href="' . $url . (($pagina - 1) > 0 ? ($pagina - 1) : 1) . '">Anterior</a></li>';
-            }
-    
-            for ($i = 1; $i <= $Npaginas; $i++) {
-                if ($pagina == $i) {
-                    $tabla .= '<li class="page-item active"><a class="page-link">' . $i . '</a></li>';
-                } else {
-                    $tabla .= '<li class="page-item"><a class="page-link" href="' . $url . $i . '">' . $i . '</a></li>';
-                }
-            }
-    
-            if ($pagina == $Npaginas) {
-                $tabla .= '<li class="page-item disabled"><a class="page-link">Siguiente</a></li>';
-            } else {
-                $tabla .= '<li class="page-item"><a class="page-link" href="' . $url . ($pagina + 1) . '">Siguiente</a></li>';
-            }
-    
-            $tabla .= '
-                    </ul>
-                </nav>
-            ';
-        }
-    
-        return $tabla;
-    } /*-- Fin controlador --*/
+    }
+
+    $tabla .= '</tbody></table></div>';
+
+    if($total > 0 && $pagina <= $Npaginas){
+        $tabla .= '<p class="text-right">Mostrando ventas <strong>'.$pag_inicio.'</strong> al <strong>'.$pag_final.'</strong> de un <strong>total de '.$total.'</strong></p>';
+    }
+
+    // Paginación
+    if($total >= 1 && $pagina <= $Npaginas){
+        $tabla .= mainModel::paginador_tablas($pagina, $Npaginas, $url, 7);
+    }
+
+    return $tabla;
+}
+
+
+
 
  /*-- Fin controlador --*/
 

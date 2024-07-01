@@ -9,7 +9,7 @@
 	class mainModel{
 
 		/*----------  Funcion conectar a BD  ----------*/
-		protected static function conectar(){
+		public static function conectar(){
 			$conexion = new PDO(SGBD,USER,PASS);
 			$conexion->exec("SET CHARACTER SET utf8");
 			return $conexion;
@@ -187,7 +187,9 @@
 
 		/*----------  Funcion limpiar cadenas  ----------*/
 public static function limpiar_cadena($cadena) {
-    if (is_string($cadena)) {
+    if (is_array($cadena)) {
+        return array_map([static::class, 'limpiar_cadena'], $cadena);
+    } elseif (is_string($cadena)) {
         $cadena = trim($cadena);
         $cadena = stripslashes($cadena);
         $cadena = str_ireplace("<script>", "", $cadena);
@@ -217,7 +219,7 @@ public static function limpiar_cadena($cadena) {
     }
     return $cadena;
 }
-		 /*--  Fin Funcion --*/
+
 
 
 		/*---------- Funcion verificar datos (expresion regular) ----------*/

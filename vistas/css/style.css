@@ -581,6 +581,15 @@ table form{
 	line-height: 35px;
 }
 
+.btn-impresa {
+    background-color: #28a745; /* Verde de Bootstrap (success) */
+    border-color: #28a745;
+    color: white; /* Color del texto en blanco para contrastar */
+}
+
+.btn-impresa i {
+    color: white; /* Color del icono en blanco */
+}
 /*----------  Breakpoints personalizados  ----------*/
 @media(max-width: 992px){
 	.nav-lateral{

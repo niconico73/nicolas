@@ -39,11 +39,6 @@
                 <i class="fas fa-search-dollar fa-fw"></i> &nbsp; Buscar venta (Código o Cliente)
             </a>
         </li>
-        <li>
-    <a href="<?php echo SERVERURL; ?>sale-search-user/">
-        <i class="fas fa-user fa-fw"></i> &nbsp; Buscar venta (Usuario)
-    </a>
-</li>
         <?php
     if(!isset($_SESSION['busqueda_venta']) && empty($_SESSION['busqueda_venta'])){
 ?>

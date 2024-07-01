@@ -3,8 +3,8 @@
         <i class="fas fa-coins fa-fw"></i> &nbsp; Ventas realizadas
     </h3>
     <p class="text-justify">
-        En el módulo VENTAS podrá realizar ventas de productos, puede usar lector de código de barras o hacerlo de forma manual digitando el código del producto (debe de configurar estas opciones en ajustes de su cuenta). También puede ver las ventas realizadas y buscar ventas en el sistema.
-    </p>
+    	En el módulo VENTAS podrá realizar ventas de productos, puede usar lector de código de barras o hacerlo de forma manual digitando el código del producto (debe de configurar estas opciones en ajustes de su cuenta). También puede ver las ventas realizadas y buscar ventas en el sistema.
+	</p>
 </div>
 
 <div class="container-fluid">
@@ -14,7 +14,11 @@
                 <i class="fas fa-cart-plus fa-fw"></i> &nbsp; Nueva venta
             </a>
         </li>
-
+        <li>
+            <a href="<?php echo SERVERURL; ?>sale-new/wholesale/">
+                <i class="fas fa-parachute-box fa-fw"></i> &nbsp; Venta por mayoreo
+            </a>
+        </li>
         <li>
             <a class="active" href="<?php echo SERVERURL; ?>sale-list/">
                 <i class="fas fa-coins fa-fw"></i> &nbsp; Ventas realizadas
@@ -32,51 +36,49 @@
         </li>
         <li>
             <a href="<?php echo SERVERURL; ?>sale-search-code/">
-                <i class="fas fa-search-dollar fa-fw"></i> &nbsp; Buscar venta (Código o Cliente)
+                <i class="fas fa-search-dollar fa-fw"></i> &nbsp; Buscar venta (Código)
             </a>
         </li>
-    </ul>
+    </ul>	
 
-    <div class="container-fluid">
-    <?php
-    // Verifica si la sesión no está activa
-    if (session_status() == PHP_SESSION_NONE) {
-        // Si no está activa, inicia la sesión
-        session_start();
-    }
 
-    // Verifica si el usuario está autenticado
-    if (!isset($_SESSION['cargo_svi'])) {
-        // Si el usuario no está autenticado, redirige a la página de inicio de sesión
-        header("Location: login.php");
-        exit();
-    }
+<div class="container-fluid">
+<?php
+// Verifica si la sesión no está activa
+if (session_status() == PHP_SESSION_NONE) {
+    // Si no está activa, inicia la sesión
+    session_start();
+}
 
-    // Obtén el rol del usuario actual desde la sesión
-    $rol = $_SESSION['cargo_svi'];
-    $usuario_id = $_SESSION['usuario_svi']; // Obtén el ID del usuario actual
+// Verifica si el usuario está autenticado
+if (!isset($_SESSION['cargo_svi'])) {
+    // Si el usuario no está autenticado, redirige a la página de inicio de sesión
+    header("Location: login.php");
+    exit();
+}
 
-    // Incluye el controlador de ventas
-    require_once "./controladores/ventaControlador.php";
-    $ins_venta = new ventaControlador();
+// Obtén el rol del usuario actual desde la sesión
+$rol = $_SESSION['cargo_svi'];
 
-    // Verifica si el rol del usuario es Administrador o Cajero
-    if ($rol == "Administrador") {
-        // Si el rol es Administrador, muestra todas las ventas
-        echo $ins_venta->paginador_venta_controlador($pagina, 15, $pagina[0], "", "", null);
-    } elseif ($rol == "Cajero") {
-        // Si el rol es Cajero, muestra solo las ventas asociadas a este usuario
-        echo $ins_venta->paginador_venta_controlador($pagina, 15, $pagina[0], "", "", $usuario_id);
-    } else {
-        // Si el rol no es ni Administrador ni Cajero, muestra un mensaje de acceso no autorizado
-        echo "Acceso no autorizado";
-    }
-    ?>
+// Incluye el controlador de ventas
+require_once "./controladores/ventaControlador.php";
+$ins_venta = new ventaControlador();
 
-    </div>
+// Verifica si el rol del usuario es Administrador o Cajero
+if ($rol == "Administrador" || $rol == "Cajero") {
+    // Si el rol es Administrador o Cajero, muestra las ventas
+    // Obtén el número de página y otros parámetros de la URL
+    $pagina = explode("/", $_GET['views']);
+    echo $ins_venta->paginador_venta_controlador($pagina[1], 15, $pagina[0], "", "");
+} else {
+    // Si el rol no es Administrador ni Cajero, muestra un mensaje de acceso no autorizado
+    echo "Acceso no autorizado";
+}
+?>
 
 </div>
 
+
 <?php
-    include "./vistas/inc/print_invoice_script.php";
+	include "./vistas/inc/print_invoice_script.php";
 ?>
