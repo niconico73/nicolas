@@ -269,17 +269,17 @@
                             </div>
                             <div class="form-group">
     <label for="banco">Banco</label><br>
-    <input type="checkbox" id="banco_bcp" name="banco[]" value="BCP">
+    <input type="radio" id="banco_bcp" name="banco[]" value="BCP">
     <label for="banco_bcp">BCP</label><br>
-    <input type="checkbox" id="banco_continental" name="banco[]" value="CONTINENTAL">
+    <input type="radio" id="banco_continental" name="banco[]" value="CONTINENTAL">
     <label for="banco_continental">CONTINENTAL</label><br>
-    <input type="checkbox" id="banco_interbank" name="banco[]" value="INTERBANK">
+    <input type="radio" id="banco_interbank" name="banco[]" value="INTERBANK">
     <label for="banco_interbank">INTERBANK</label><br>
-    <input type="checkbox" id="banco_yape" name="banco[]" value="YAPE">
+    <input type="radio" id="banco_yape" name="banco[]" value="YAPE">
     <label for="banco_yape">YAPE</label><br>
-    <input type="checkbox" id="banco_plim" name="banco[]" value="PLIM">
+    <input type="radio" id="banco_plim" name="banco[]" value="PLIM">
     <label for="banco_plim">PLIM</label><br>
-    <input type="checkbox" id="banco_efectivo" name="banco[]" value="EFECTIVO">
+    <input type="radio" id="banco_efectivo" name="banco[]" value="EFECTIVO">
     <label for="banco_efectivo">EFECTIVO</label><br>
 </div>
                         </div>

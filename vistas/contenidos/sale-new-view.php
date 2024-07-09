@@ -32,7 +32,11 @@
                     <i class="fas fa-cart-plus fa-fw"></i> &nbsp; Nueva venta
                 </a>
             </li>
-           
+            <li>
+                <a href="<?php echo SERVERURL; ?>sale-new/wholesale/">
+                    <i class="fas fa-parachute-box fa-fw"></i> &nbsp; Venta por mayoreo
+                </a>
+            </li>
         <?php } ?>
         <li>
             <a href="<?php echo SERVERURL; ?>sale-list/">
@@ -51,7 +55,7 @@
         </li>
         <li>
             <a href="<?php echo SERVERURL; ?>sale-search-code/">
-                <i class="fas fa-search-dollar fa-fw"></i> &nbsp; Buscar venta (Código o Cliente)
+                <i class="fas fa-search-dollar fa-fw"></i> &nbsp; Buscar venta (Código)
             </a>
         </li>
     </ul>
@@ -108,20 +112,7 @@
                         <h4 class="alert-heading text-center">Venta realizada</h4>
                         <p class="text-center">La venta se realizó con éxito. ¿Que desea hacer a continuación? </p>
                         <br>
-                        <div class="container">
-                            <div class="row">
-                                <div class="col-12 col-md-6 text-center">
-                                    <button type="button" class="btn btn-primary" onclick="print_ticket('<?php echo SERVERURL."pdf/ticket_".THERMAL_PRINT_SIZE."mm.php?code=".$_SESSION['venta_codigo_factura']; ?>')" >
-                                        <i class="fas fa-receipt fa-4x"></i><br>
-                                        Imprimir Boleta
-                                    </buttona>
-                                </div>
-                                <div class="col-12 col-md-6 text-center">
-                                    <button type="button" class="btn btn-primary" onclick="print_invoice('<?php echo SERVERURL."pdf/invoice.php?code=".$_SESSION['venta_codigo_factura']; ?>')" >
-                                        <i class="fas fa-file-invoice-dollar fa-4x"></i><br>
-                                        Imprimir factura
-                                    </button>
-                                </div>
+
                             </div>
                         </div>
                         <button type="button" class="close" data-dismiss="alert" aria-label="Close">
@@ -364,7 +355,38 @@
                         </div>
                     </div>
 
-                  
+                    <div class="form-group">
+                        <label for="venta_descuento">Descuento de venta (%)</label>
+                        <div class="container-fluid">
+                            <?php
+                                if(isset($_SESSION['venta_descuento']) && $_SESSION['venta_descuento']>=1){
+                            ?>
+                            <div class="row">
+                                <div class="col-10 text-center">
+                                    <input type="text" class="form-control" id="venta_descuento" value="<?php echo $_SESSION['venta_descuento']; ?>" pattern="[0-9]{1,2}" maxlength="2" readonly >
+                                </div>
+                                <div class="col-2 text-center">
+                                    <button type="button" class="btn btn-danger" data-toggle="popover" data-trigger="hover" data-placement="top" data-content="Remover Descuento" onclick="remover_descuento(<?php echo $_SESSION['venta_descuento']; ?>)" >
+                                        <i class="far fa-times-circle"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <?php
+                                }else{
+                            ?>
+                            <div class="row">
+                                <div class="col-10 text-center">
+                                    <input type="text" class="form-control" id="venta_descuento" value="0" pattern="[0-9]{1,2}" maxlength="2" >
+                                </div>
+                                <div class="col-2 text-center">
+                                    <button type="button" class="btn btn-info" data-toggle="popover" data-trigger="hover" data-placement="top" data-content="Aplicar Descuento" onclick="aplicar_descuento()">
+                                        <i class="fas fa-money-bill-wave"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <?php } ?>
+                        </div>
+                    </div>
 
                     <div class="form-group">
                         <label for="venta_abono" class="bmd-label-floating" >Total pagado por cliente <?php echo CAMPO_OBLIGATORIO; ?></label>
@@ -430,7 +452,6 @@
 </div>
 
 <!-- MODAL CLIENTE -->
-<!-- MODAL CLIENTE -->
 <div class="modal fade" id="modal_cliente" tabindex="-1" role="dialog" aria-labelledby="modal_cliente" aria-hidden="true">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
@@ -449,18 +470,15 @@
                 </div>
                 <br>
                 <div class="container-fluid" id="tabla_clientes"></div>
-                <!-- Botón "Registrar Cliente Nuevo" -->
-                <button id="btn_registrar_cliente" class="btn btn-primary" style="display: none;">Registrar Cliente Nuevo</button>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-primary" onclick="buscar_cliente()"><i class="fas fa-search fa-fw"></i> &nbsp; Buscar</button>
+                <button type="button" class="btn btn-primary" onclick="buscar_cliente()" ><i class="fas fa-search fa-fw"></i> &nbsp; Buscar</button>
                 &nbsp; &nbsp;
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
             </div>
         </div>
     </div>
 </div>
-
 
 <!-- MODAL BUSCAR CODIGO -->
 <div class="modal fade" id="modal_buscar_codigo" tabindex="-1" role="dialog" aria-labelledby="modal_buscar_codigo" aria-hidden="true">
@@ -541,65 +559,85 @@
         }
 
     }
-/* funcion metodo de pago NICOLAS */
 
+
+    /* Actualizar cantidad de producto */
+    function actualizar_cantidad(id,codigo){
+        let cantidad=document.querySelector(id).value;
+
+        cantidad=cantidad.trim();
+        codigo.trim();
+
+        if(cantidad>0){
+            Swal.fire({
+                title: "¿Estás seguro?",
+                text: "Desea actualizar la cantidad de productos",
+                type: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Si, actualizar',
+                cancelButtonText: 'No, cancelar'
+            }).then((result) => {
+                if(result.value){
+
+                    let datos = new FormData();
+                    datos.append("producto_codigo_up", codigo);
+                    datos.append("producto_cantidad_up", cantidad);
+                    datos.append("modulo_venta", "actualizar_producto");
+
+                    fetch('<?php echo SERVERURL; ?>ajax/ventaAjax.php',{
+                        method: 'POST',
+                        body: datos
+                    })
+                    .then(respuesta => respuesta.json())
+                    .then(respuesta =>{
+                        return alertas_ajax(respuesta);
+                    });
+                }
+            });
+        }else{
+            Swal.fire({
+                title: 'Ocurrió un error inesperado',
+                text: 'Debes de introducir una cantidad mayor a 0',
+                type: 'error',
+                confirmButtonText: 'Aceptar'
+            });
+        }
+    }
 
 
     /*----------  Buscar cliente  ----------*/
-   function buscar_cliente(){
-    let input_cliente = document.querySelector('#input_cliente').value;
+    function buscar_cliente(){
+        let input_cliente=document.querySelector('#input_cliente').value;
 
-    input_cliente = input_cliente.trim();
+        input_cliente=input_cliente.trim();
 
-    if(input_cliente != ""){
+        if(input_cliente!=""){
 
-        let datos = new FormData();
-        datos.append("buscar_cliente", input_cliente);
-        datos.append("modulo_venta", "buscar_cliente");
+            let datos = new FormData();
+            datos.append("buscar_cliente", input_cliente);
+            datos.append("modulo_venta", "buscar_cliente");
 
-        fetch('<?php echo SERVERURL; ?>ajax/ventaAjax.php',{
-            method: 'POST',
-            body: datos
-        })
-        .then(respuesta => respuesta.text())
-        .then(respuesta =>{
-            let tabla_clientes = document.querySelector('#tabla_clientes');
-            if(respuesta.trim().includes("No hemos encontrado ningún cliente en el sistema que coincida con")) {
-                // Cliente no encontrado
-                tabla_clientes.innerHTML = "<p>No hemos encontrado ningún cliente en el sistema que coincida con '" + input_cliente + "'.</p>";
-                // Crear el botón "Registrar Cliente Nuevo"
-                let botonNuevoCliente = document.createElement('button');
-                botonNuevoCliente.textContent = 'Registrar Cliente Nuevo';
-                botonNuevoCliente.classList.add('btn', 'btn-primary');
-                // Asignar evento al botón para redireccionar a la página de registro
-                botonNuevoCliente.onclick = function() {
-                    redireccionarNuevoCliente();
-                };
-                // Agregar el botón al contenedor
-                tabla_clientes.appendChild(botonNuevoCliente);
-            } else {
-                // Mostrar resultados de la búsqueda
-                tabla_clientes.innerHTML = respuesta;
-            }
-        });
+            fetch('<?php echo SERVERURL; ?>ajax/ventaAjax.php',{
+                method: 'POST',
+                body: datos
+            })
+            .then(respuesta => respuesta.text())
+            .then(respuesta =>{
+                let tabla_clientes=document.querySelector('#tabla_clientes');
+                tabla_clientes.innerHTML=respuesta;
+            });
 
-    } else {
-        Swal.fire({
-            title: 'Ocurrió un error inesperado',
-            text: 'Debes de introducir el Numero de documento, Nombre, Apellido o Teléfono del cliente',
-            type: 'error',
-            confirmButtonText: 'Aceptar'
-        });
+        }else{
+            Swal.fire({
+                title: 'Ocurrió un error inesperado',
+                text: 'Debes de introducir el Numero de documento, Nombre, Apellido o Teléfono del cliente',
+                type: 'error',
+                confirmButtonText: 'Aceptar'
+            });
+        }
     }
-}
-
-function redireccionarNuevoCliente() {
-    // Redireccionar a la página de registro de cliente
-    window.location.href = '<?php echo SERVERURL; ?>client-new';
-}
-
-
-
 
 
     /*----------  Agregar cliente  ----------*/

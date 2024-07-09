@@ -12,6 +12,21 @@ if (isset($_POST['modulo_venta'])) {
     $ins_venta = new ventaControlador();
 
     switch ($_POST['modulo_venta']) {
+        case 'actualizar_producto':
+            try {
+                $response = $ins_venta->actualizar_producto_carrito_controlador();
+                
+                // Check if the controller returned an error message
+                if (isset($response['error'])) {
+                    echo json_encode(array("success" => false, "message" => $response['error']));
+                } else {
+                    echo json_encode(array("success" => true, "message" => "Cantidad actualizada correctamente"));
+                }
+            } catch (Exception $e) {
+                error_log("Error al actualizar el producto: " . $e->getMessage());
+                echo json_encode(array("success" => false, "message" => "Error al actualizar el producto"));
+            }
+            break;
         case 'agregar_producto':
             echo $ins_venta->agregar_producto_carrito_controlador();
             break;
@@ -45,9 +60,10 @@ if (isset($_POST['modulo_venta'])) {
             echo $ins_venta->eliminar_producto_carrito_controlador();
             break;
 
-        case 'actualizar_producto':
-            echo $ins_venta->actualizar_producto_carrito_controlador();
-            break;
+      	/*--------- Actualizar producto de carrito ---------*/
+		if($_POST['modulo_venta']=="actualizar_producto"){
+			echo $ins_venta->actualizar_producto_carrito_controlador();
+		}
 
         case 'buscar_cliente':
             echo $ins_venta->buscar_cliente_venta_controlador();

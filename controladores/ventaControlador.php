@@ -277,198 +277,110 @@ if ($peticion_ajax) {
         } /*-- Fin controlador --*/
 
 
-        /*---------- Controlador actualizar producto a venta ----------*/
-        public function actualizar_producto_carrito_controlador(){
+      /*---------- Controlador actualizar producto a venta ----------*/
+    public function actualizar_producto_carrito_controlador()
+    {
+        if ($_SESSION['venta_tipo'] == "normal") {
+            $campo_precio = "producto_precio_venta";
+            $url_venta = SERVERURL . "sale-new/";
+        } else {
+            $campo_precio = "producto_precio_mayoreo";
+            $url_venta = SERVERURL . "sale-new/wholesale/";
+        }
 
-            if($_SESSION['venta_tipo']=="normal"){
-                $campo_precio="producto_precio_venta";
-                $url_venta=SERVERURL."sale-new/";
-            }else{
-                $campo_precio="producto_precio_mayoreo";
-                $url_venta=SERVERURL."sale-new/wholesale/";
-            }
+        $codigo = mainModel::limpiar_cadena($_POST['producto_codigo_up']);
+        $cantidad = mainModel::limpiar_cadena($_POST['producto_cantidad_up']);
 
-            /*== Recuperando codigo & cantidad del producto ==*/
-            $codigo=mainModel::limpiar_cadena($_POST['producto_codigo_up']);
-            $cantidad=mainModel::limpiar_cadena($_POST['producto_cantidad_up']);
+        if (empty($codigo) || empty($cantidad)) {
+            $alerta = [
+                "Alerta" => "simple",
+                "Titulo" => "Ocurrió un error inesperado",
+                "Texto" => "Faltan parámetros de configuración para actualizar la cantidad.",
+                "Tipo" => "error"
+            ];
+            echo json_encode($alerta);
+            exit();
+        }
 
-            /*== comprobando campos vacios ==*/
-            if($codigo=="" || $cantidad==""){
-                $alerta=[
-                    "Alerta"=>"simple",
-                    "Titulo"=>"Ocurrió un error inesperado",
-                    "Texto"=>"No podemos actualizar la cantidad de productos debido a que faltan algunos parámetros de configuración.",
-                    "Tipo"=>"error"
-                ];
-                echo json_encode($alerta);
-                exit();
-            }
+        if ($cantidad <= 0 || !is_numeric($cantidad)) {
+            $alerta = [
+                "Alerta" => "simple",
+                "Titulo" => "Ocurrió un error inesperado",
+                "Texto" => "La cantidad debe ser un número mayor a 0.",
+                "Tipo" => "error"
+            ];
+            echo json_encode($alerta);
+            exit();
+        }
 
-            /*== comprobando cantidad de productos ==*/
-            if($cantidad<=0){
-                $alerta=[
-                    "Alerta"=>"simple",
-                    "Titulo"=>"Ocurrió un error inesperado",
-                    "Texto"=>"Debes de introducir una cantidad mayor a 0.",
-                    "Tipo"=>"error"
-                ];
-                echo json_encode($alerta);
-                exit();
-            }
+        $check_empresa=mainModel::ejecutar_consulta_simple("SELECT * FROM empresa LIMIT 1");
+        if($check_empresa->rowCount()<1){
+            $alerta=[
+                "Alerta"=>"simple",
+                "Titulo"=>"Ocurrió un error inesperado",
+                "Texto"=>"No hemos podido obtener algunos datos de los impuestos para agregar el producto.",
+                "Tipo"=>"error"
+            ];
+            echo json_encode($alerta);
+            exit();
+        }else{
+            $datos_empresa=$check_empresa->fetch();
+        }
+        $check_empresa->closeCursor();
+        $check_empresa=mainModel::desconectar($check_empresa);
 
-            /*== Comprobando producto en la DB ==*/
-            $check_producto=mainModel::ejecutar_consulta_simple("SELECT * FROM producto WHERE producto_codigo='$codigo'");
-            if($check_producto->rowCount()<=0){
-                $alerta=[
-                    "Alerta"=>"venta",
-                    "Titulo"=>"Ocurrió un error inesperado",
-                    "Texto"=>"No hemos encontrado el producto con código de barras : '$codigo'.",
-                    "Tipo"=>"error"
-                ];
-                echo json_encode($alerta);
-                exit();
-            }else{
-                $campos=$check_producto->fetch();
-            }
-            $check_producto->closeCursor();
-			$check_producto=mainModel::desconectar($check_producto);
+        if($datos_empresa['empresa_impuesto_nombre']!=$_SESSION['venta_impuesto_nombre'] || $datos_empresa['empresa_impuesto_porcentaje']!=$_SESSION['venta_impuesto_porcentaje']){
+            $alerta=[
+                "Alerta"=>"simple",
+                "Titulo"=>"Ocurrió un error inesperado",
+                "Texto"=>"Hemos detectado un cambio en los datos de la empresa e impuestos, por favor recargue la página e intente nuevamente o verifique los datos de la empresa.",
+                "Tipo"=>"error"
+            ];
+            echo json_encode($alerta);
+            exit();
+        }
 
-            /*== Obteniendo datos de la empresa ==*/
-            $check_empresa=mainModel::ejecutar_consulta_simple("SELECT * FROM empresa LIMIT 1");
-            if($check_empresa->rowCount()<1){
-                $alerta=[
-                    "Alerta"=>"simple",
-                    "Titulo"=>"Ocurrió un error inesperado",
-                    "Texto"=>"No hemos podido obtener algunos datos de los impuestos para agregar el producto.",
-                    "Tipo"=>"error"
-                ];
-                echo json_encode($alerta);
-                exit();
-            }else{
-                $datos_empresa=$check_empresa->fetch();
-            }
-            $check_empresa->closeCursor();
-			$check_empresa=mainModel::desconectar($check_empresa);
+        if (!empty($_SESSION['datos_producto_venta'][$codigo])) {
+            // ... (verificar cambios en la cantidad) ...
 
-            if($datos_empresa['empresa_impuesto_nombre']!=$_SESSION['venta_impuesto_nombre'] || $datos_empresa['empresa_impuesto_porcentaje']!=$_SESSION['venta_impuesto_porcentaje']){
-                $alerta=[
-                    "Alerta"=>"simple",
-                    "Titulo"=>"Ocurrió un error inesperado",
-                    "Texto"=>"Hemos detectado un cambio en los datos de la empresa e impuestos, por favor recargue la página e intente nuevamente o verifique los datos de la empresa.",
-                    "Tipo"=>"error"
-                ];
-                echo json_encode($alerta);
-                exit();
-            }
+            $_SESSION['datos_producto_venta'][$codigo]['venta_detalle_cantidad'] = $detalle_cantidad;
 
-            /*== comprobando producto en carrito ==*/
-            if(!empty($_SESSION['datos_producto_venta'][$codigo])){
+            // Calcular el descuento por producto (monto fijo)
+            $descuentoProducto = $_SESSION['venta_descuento'];
 
-                if($_SESSION['datos_producto_venta'][$codigo]["venta_detalle_cantidad"]==$cantidad){
-                    $alerta=[
-                        "Alerta"=>"simple",
-                        "Titulo"=>"Ocurrió un error inesperado",
-                        "Texto"=>"No has modificado la cantidad de productos",
-                        "Tipo"=>"error"
-                    ];
-                    echo json_encode($alerta);
-                    exit();
-                }
+            // Calcular los totales del producto con el descuento aplicado
+            $detalle_total = ($detalle_cantidad * $precio_con_descuento) - $descuentoProducto;
+            $detalle_subtotal = $detalle_total / (($datos_empresa['empresa_impuesto_porcentaje'] / 100) + 1);
+            $detalle_impuestos = $detalle_total - $detalle_subtotal;
 
-                if($cantidad>$_SESSION['datos_producto_venta'][$codigo]["venta_detalle_cantidad"]){
-                    $diferencia_productos="agrego +".($cantidad-$_SESSION['datos_producto_venta'][$codigo]["venta_detalle_cantidad"]);
-                }else{
-                    $diferencia_productos="quito -".($_SESSION['datos_producto_venta'][$codigo]["venta_detalle_cantidad"]-$cantidad);
-                }
+            // Actualizar los totales del producto en la sesión
+            $_SESSION['datos_producto_venta'][$codigo]['venta_detalle_total'] = $detalle_total;
+            $_SESSION['datos_producto_venta'][$codigo]['venta_detalle_subtotal'] = $detalle_subtotal;
+            $_SESSION['datos_producto_venta'][$codigo]['venta_detalle_impuestos'] = $detalle_impuestos;
+            $_SESSION['datos_producto_venta'][$codigo]['venta_detalle_descuento_total'] = $descuentoProducto;
 
+            // Recalcular los totales generales de la venta
+            $this->recalcularTotalesVenta();
 
-                $detalle_cantidad=$cantidad;
+            $_SESSION['alerta_producto_agregado'] = "Se $diferencia_productos <strong>" . $campos['producto_nombre'] . "</strong> a la venta. Total en carrito <strong>$detalle_cantidad</strong>";
 
-                $stock_total=$campos['producto_stock_total']-$detalle_cantidad;
-
-                if($stock_total<0){
-                    $alerta=[
-                        "Alerta"=>"simple",
-                        "Titulo"=>"Ocurrió un error inesperado",
-                        "Texto"=>"Lo sentimos, no hay existencias suficientes del producto seleccionado. Existencias disponibles: ".($stock_total+$detalle_cantidad)."",
-                        "Tipo"=>"error"
-                    ];
-                    echo json_encode($alerta);
-                    exit();
-                }
-
-                $detalle_descuento_total=$campos[$campo_precio]*($campos['producto_descuento']/100);
-                $detalle_descuento_total=number_format($detalle_descuento_total,MONEDA_DECIMALES,'.','');
-
-                $precio_con_descuento=$campos[$campo_precio]-$detalle_descuento_total;
-                $precio_con_descuento=number_format($precio_con_descuento,MONEDA_DECIMALES,'.','');
-
-                $detalle_total=$detalle_cantidad*$precio_con_descuento;
-                $detalle_total=number_format($detalle_total,MONEDA_DECIMALES,'.','');
-
-                $detalle_subtotal=$detalle_total/(($datos_empresa['empresa_impuesto_porcentaje']/100)+1);
-                $detalle_subtotal=number_format($detalle_subtotal,MONEDA_DECIMALES,'.','');
-
-                $detalle_impuestos=$detalle_total-$detalle_subtotal;
-                $detalle_impuestos=number_format($detalle_impuestos,MONEDA_DECIMALES,'.','');
-
-                $detalle_costos=$campos['producto_precio_compra']*$detalle_cantidad;
-                $detalle_costos=number_format($detalle_costos,MONEDA_DECIMALES,'.','');
-
-                $detalle_utilidad=$detalle_total-$detalle_costos;
-                $detalle_utilidad=number_format($detalle_utilidad,MONEDA_DECIMALES,'.','');
-
-                /*== Garantia de producto ==*/
-                if($campos['producto_garantia_unidad']=="0" || $campos['producto_garantia_tiempo']=="N/A"){
-                    $producto_garantia="N/A";
-                }else{
-                    $producto_garantia=$campos['producto_garantia_unidad']." ".$campos['producto_garantia_tiempo'];
-                }
-
-                $_SESSION['datos_producto_venta'][$codigo]=[
-                    "tipo_precio"=>$_SESSION['venta_tipo'],
-                    "producto_id"=>$campos['producto_id'],
-					"producto_codigo"=>$campos['producto_codigo'],
-					"producto_sku"=>$campos['producto_sku'],
-					"producto_stock_total"=>$stock_total,
-					"producto_stock_total_old"=>$campos['producto_stock_total'],
-					"producto_stock_vendido"=>$campos['producto_stock_vendido'],
-                    "producto_stock_vendido_old"=>$campos['producto_stock_vendido'],
-                    "producto_garantia"=>$producto_garantia,
-                    "venta_detalle_precio_compra"=>$campos['producto_precio_compra'],
-                    "venta_detalle_precio_regular"=>$campos[$campo_precio],
-                    "venta_detalle_precio_venta"=>$precio_con_descuento,
-                    "venta_detalle_cantidad"=>$detalle_cantidad,
-                    "venta_detalle_subtotal"=>$detalle_subtotal,
-                    "venta_detalle_impuestos"=>$detalle_impuestos,
-                    "venta_detalle_descuento_porcentaje"=>$campos['producto_descuento'],
-                    "venta_detalle_descuento_total"=>$detalle_descuento_total,
-                    "venta_detalle_total"=>$detalle_total,
-                    "venta_detalle_costos"=>$detalle_costos,
-                    "venta_detalle_utilidad"=>$detalle_utilidad,
-                    "venta_detalle_descripcion"=>$campos['producto_nombre']
-                ];
-
-                $_SESSION['alerta_producto_agregado']="Se $diferencia_productos <strong>".$campos['producto_nombre']."</strong> a la venta. Total en carrito <strong>$detalle_cantidad</strong>";
-
-                $alerta=[
-                    "Alerta"=>"redireccionar",
-                    "URL"=>$url_venta
-                ];
-
-                echo json_encode($alerta);
-                exit();
-            }else{
-                $alerta=[
-                    "Alerta"=>"simple",
-                    "Titulo"=>"Ocurrió un error inesperado",
-                    "Texto"=>"No hemos encontrado el producto que desea actualizar en el carrito.",
-                    "Tipo"=>"error"
-                ];
-                echo json_encode($alerta);
-                exit();
-            }
-        } /*-- Fin controlador --*/
+            $alerta = [
+                "Alerta" => "recargar",
+                "URL" => $url_venta
+            ];
+            echo json_encode($alerta);
+            exit();
+        } else {
+            $alerta = [
+                "Alerta" => "simple",
+                "Titulo" => "Ocurrió un error inesperado",
+                "Texto" => "No hemos encontrado el producto que desea actualizar en el carrito.",
+                "Tipo" => "error"
+            ];
+            echo json_encode($alerta);
+            exit();
+        }
+    }
 
 
         /*---------- Controlador buscar cliente ----------*/
@@ -1533,72 +1445,48 @@ if ($peticion_ajax) {
         } /*-- Fin controlador --*/
 
 /*---------- Controlador paginador ventas ----------*/
-public function paginador_venta_controlador($pagina, $registros, $url, $fecha_inicio, $fecha_final, $id_usuario = null) {
+public function paginador_venta_controlador($pagina, $registros, $url, $fecha_inicio, $fecha_final){
     $pagina = mainModel::limpiar_cadena($pagina);
     $registros = mainModel::limpiar_cadena($registros);
     $url = mainModel::limpiar_cadena($url);
     $tipo = $url;
-    
-    $url = SERVERURL . $url . "/";
-    
+
+    $url = SERVERURL.$url."/";
+
     $fecha_inicio = mainModel::limpiar_cadena($fecha_inicio);
     $fecha_final = mainModel::limpiar_cadena($fecha_final);
-    
-    // Agregar un nuevo parámetro para el ID del vendedor (opcional)
-    $id_vendedor = mainModel::limpiar_cadena($_GET['vendedor'] ?? null); 
-    
-    $tabla = ""; // Inicializa la variable $tabla aquí
+    $tabla = "";
 
     $pagina = ($pagina > 0) ? (int) $pagina : 1;
     $inicio = ($pagina > 0) ? (($pagina * $registros) - $registros) : 0;
 
     $campos_tablas = "venta.venta_id,venta.venta_codigo,venta.venta_tipo,venta.venta_fecha,venta.venta_hora,venta.venta_total_final,venta.venta_estado,venta.usuario_id,venta.cliente_id,venta.caja_id,usuario.usuario_id,usuario.usuario_nombre,usuario.usuario_apellido,cliente.cliente_id,cliente.cliente_nombre,cliente.cliente_apellido";
 
-
-    // Variables para controlar la construcción de la consulta
-    $whereClause = [];
-    $orderByClause = " ORDER BY venta.venta_id DESC";
-
     // Consulta base para obtener todas las ventas
     $consulta = "SELECT SQL_CALC_FOUND_ROWS $campos_tablas FROM venta INNER JOIN cliente ON venta.cliente_id=cliente.cliente_id INNER JOIN usuario ON venta.usuario_id=usuario.usuario_id";
 
     // Si la página es "sale-pending", mostrar solo las ventas pendientes
-    if ($tipo == "sale-pending") {
-        $whereClause[] = "venta.venta_estado = 'Pendiente'";
+    if($tipo == "sale-pending"){
+        $consulta .= " WHERE venta.venta_estado = 'Pendiente'";
     }
 
     // Si el tipo es "sale-search-date" y se proporcionan fechas de inicio y final
-    if ($tipo == "sale-search-date" && $fecha_inicio != "" && $fecha_final != "") {
-        $whereClause[] = "(venta.venta_fecha BETWEEN '$fecha_inicio' AND '$fecha_final')";
-    } elseif ($tipo == "sale-search-code" && $fecha_inicio != "") {
+    if($tipo == "sale-search-date" && $fecha_inicio != "" && $fecha_final != ""){
+        $consulta .= " AND (venta.venta_fecha BETWEEN '$fecha_inicio' AND '$fecha_final')";
+    } elseif($tipo == "sale-search-code" && $fecha_inicio != "") {
         // Si el tipo es "sale-search-code" y se proporciona un código de venta
-        $whereClause[] = "(venta.venta_codigo='$fecha_inicio')";
+        $consulta .= " AND (venta.venta_codigo='$fecha_inicio')";
     }
 
-    // Filtrar por usuario si se proporciona un id de usuario
-    if ($id_vendedor) {
-        $consulta .= " AND venta.usuario_id = '$id_vendedor'";
+    // Si el usuario no es administrador, agregar filtro para mostrar solo sus ventas
+    if ($_SESSION['cargo_svi'] != "Administrador") {
+        $id_usuario = $_SESSION['id_svi']; // ID del usuario actual
+        $consulta .= " AND venta.usuario_id = '$id_usuario'";
     }
 
-    // Agregar un nuevo parámetro para el ID del vendedor (opcional)
-    $id_vendedor = mainModel::limpiar_cadena($_GET['vendedor'] ?? null); 
-
-    // Filtrar por vendedor si se proporciona un ID
-    if ($id_vendedor) {
-        $whereClause[] = "venta.usuario_id = '$id_vendedor'";
-    }
-
-    // Construir la cláusula WHERE
-    if (!empty($whereClause)) {
-        $consulta .= " WHERE " . implode(" AND ", $whereClause);
-    }
-
-    // Agregar la cláusula ORDER BY (siempre se ordena por ID descendente)
-    $consulta .= $orderByClause;
-
-    // Agregar LIMIT solo si no es "sale-pending" (para mostrar todos los pendientes)
-    if ($tipo != "sale-pending") {
-        $consulta .= " LIMIT $inicio,$registros";
+    // Si la página no es "sale-pending", mostrar todas las ventas (tanto pendientes como completadas)
+    if($tipo != "sale-pending"){
+        $consulta .= " ORDER BY venta.venta_id DESC LIMIT $inicio,$registros";
     }
 
     $conexion = mainModel::conectar();
@@ -1611,67 +1499,24 @@ public function paginador_venta_controlador($pagina, $registros, $url, $fecha_in
 
     $Npaginas = ceil($total / $registros);
 
-    // Crear un elemento select para elegir el vendedor (antes de la tabla)
-    $tabla = '
-    <script>
-  function filtrarPorVendedor(usuarioId) {
-        // Obtén la URL actual
-        const urlActual = new URL(window.location.href);
-
-        // Crea una nueva URL base sin parámetros
-        const urlBase = new URL(urlActual.origin + urlActual.pathname);
-
-        // Agrega el parámetro "vendedor" si se seleccionó un vendedor
-        if (vendedorId) {
-            urlBase.searchParams.set("vendedor", vendedorId);
-        }
-
-        // Mantén el parámetro "pagina" si existe
-        const paginaActual = urlActual.searchParams.get("pagina");
-        if (paginaActual) {
-            urlBase.searchParams.set("pagina", paginaActual);
-        }
-
-        // Redirige a la nueva URL base
-        window.location.href = urlBase.toString();
-    }
-</script>
-   <div class="form-group">
-    <label for="vendedor">Filtrar por Vendedor:</label>
-    <select class="form-control" id="vendedor" onchange="filtrarPorVendedor(this.value); return false;"> 
-        <option value="">Todos los Vendedores</option>';
-
-    // Obtener la lista de vendedores desde la base de datos
-    $vendedores = mainModel::ejecutar_consulta_simple("SELECT usuario_id, usuario_nombre, usuario_apellido FROM usuario");
-    foreach ($vendedores as $vendedor) {
-        $selected = ($id_vendedor == $vendedor['usuario_id']) ? 'selected' : '';
-        $tabla .= '<option value="' . $vendedor['usuario_id'] . '" ' . $selected . '>'
-                . $vendedor['usuario_nombre'] . ' ' . $vendedor['usuario_apellido']
-                . '</option>';
-    }
-    $tabla .= '</select></div>';
-
-
-
     // Cuerpo de la tabla
     $tabla .= '<div class="table-responsive">
-                    <table class="table table-dark table-sm">
-                        <thead>
-                            <tr class="text-center roboto-medium">
-                                <th>#</th>
-                                <th>NRO.</th>
-                                <th>CODIGO</th>
-                                <th>FECHA</th>
-                                <th>CLIENTE</th>
-                                <th>VENDEDOR</th>
-                                <th>TOTAL</th>
-                                <th>ESTADO</th>
-                                <th><i class="fas fa-tools"></i>&nbsp; OPCIONES</th>
-                                <th>¿FACTURADO?</th>
-                            </tr>
-                        </thead>
-                        <tbody>';
-
+                <table class="table table-dark table-sm">
+                    <thead>
+                        <tr class="text-center roboto-medium">
+                            <th>#</th>
+                            <th>NRO.</th>
+                            <th>CODIGO</th>
+                            <th>FECHA</th>
+                            <th>CLIENTE</th>
+                            <th>VENDEDOR</th>
+                            <th>TOTAL</th>
+                            <th>ESTADO</th>
+                            <th><i class="fas fa-tools"></i>&nbsp; OPCIONES</th>
+                            <th>¿FACTURADO?</th>
+                        </tr>
+                    </thead>
+                    <tbody>';
 
     if($total >= 1 && $pagina <= $Npaginas){
         $contador = $inicio + 1;
@@ -1685,28 +1530,52 @@ public function paginador_venta_controlador($pagina, $registros, $url, $fecha_in
                             <td>'.$rows['cliente_nombre'].' '.$rows['cliente_apellido'].'</td>
                             <td>'.$rows['usuario_nombre'].' '.$rows['usuario_apellido'].'</td>
                             <td>'.MONEDA_SIMBOLO.number_format($rows['venta_total_final'], MONEDA_DECIMALES, MONEDA_SEPARADOR_DECIMAL, MONEDA_SEPARADOR_MILLAR).' '.MONEDA_NOMBRE.'</td>';
-                            if($rows['venta_estado'] == "Cancelado"){
-                                $tabla .= '<td><span id="estadoVenta_' . $rows['venta_id'] . '" class="badge badge-secondary">'.$rows['venta_estado'].'</span></td>';
-                            } elseif($rows['venta_estado'] == "Impreso") {
-                                $tabla .= '<td><span id="estadoVenta_' . $rows['venta_id'] . '" class="badge badge-success">'.$rows['venta_estado'].'</span></td>'; // Clase badge-success para verde
-                            } else {
-                                $tabla .= '<td><span id="estadoVenta_' . $rows['venta_id'] . '" class="badge badge-warning">'.$rows['venta_estado'].'</span></td>';
-                            }
 
+            // Estado de la venta
+            $estado_class = "";
+            switch($rows['venta_estado']){
+                case "Cancelado":
+                    $estado_class = "badge-secondary";
+                    break;
+                case "Impreso":
+                    $estado_class = "badge-success";
+                    break;
+                default:
+                    $estado_class = "badge-warning";
+                    break;
+            }
+            $tabla .= '<td><span id="estadoVenta_' . $rows['venta_id'] . '" class="badge ' . $estado_class . '">'.$rows['venta_estado'].'</span></td>';
+
+            // Opciones de la venta
             $tabla .= '<td>
                             <div class="btn-group" role="group" aria-label="Options" style="margin: 0;">
                                 <a class="btn btn-primary btn-sale-options" href="'.SERVERURL.'sale-detail/'.$rows['venta_codigo'].'/" data-toggle="popover" data-trigger="hover" title="Detalle venta Nro. '.$rows['venta_id'].'" data-content="Detalles, pagos & devoluciones de venta Nro.'.$rows['venta_id'].' - código: '.$rows['venta_codigo'].'">
                                     <i class="fas fa-cart-plus fa-fw" style="color: #FF3333;"></i>
-                                </a>
-                                <button type="button" class="btn btn-info btn-sale-options" onclick="print_invoice(\''.SERVERURL.'pdf/invoice.php?code='.$rows['venta_codigo'].'\')" data-toggle="popover" data-trigger="hover" title="Imprimir factura Nro. '.$rows['venta_id'].'" data-content="CÓDIGO: '.$rows['venta_codigo'].'">
-                                    <i class="fas fa-file-invoice-dollar fa-fw"></i>
-                                </button>';
-                              // Verificar si el usuario es administrador antes de mostrar el botón de ticket
-if ($_SESSION['cargo_svi'] == "Administrador") {
-    $tabla .= '<button type="button" class="btn btn-info btn-sale-options" onclick="print_ticket(\''.SERVERURL.'pdf/ticket_'.THERMAL_PRINT_SIZE.'mm.php?code='.$rows['venta_codigo'].'\')" data-toggle="popover" data-trigger="hover" title="Imprimir Boleta Nro. '.$rows['venta_id'].'" data-content="CÓDIGO: '.$rows['venta_codigo'].'">
-                <i class="fas fa-receipt fa-fw" style="color: black;"></i>
-              </button>';}
+                                </a>';
 
+            // Botones de imprimir factura y ticket
+            if($rows['venta_estado'] != 'Pendiente'){
+                $tabla .= '<button type="button" class="btn btn-info btn-sale-options" onclick="print_invoice(\''.SERVERURL.'pdf/invoice.php?code='.$rows['venta_codigo'].'\')" data-toggle="popover" data-trigger="hover" title="Imprimir factura Nro. '.$rows['venta_id'].'" data-content="CÓDIGO: '.$rows['venta_codigo'].'">
+                                <i class="fas fa-file-invoice-dollar fa-fw"></i>
+                            </button>';
+                // Mostrar botón de ticket solo para administradores
+                if ($_SESSION['cargo_svi'] == "Administrador") {
+                    $tabla .= '<button type="button" class="btn btn-info btn-sale-options" onclick="print_ticket(\''.SERVERURL.'pdf/ticket_'.THERMAL_PRINT_SIZE.'mm.php?code='.$rows['venta_codigo'].'\')" data-toggle="popover" data-trigger="hover" title="Imprimir Boleta Nro. '.$rows['venta_id'].'" data-content="CÓDIGO: '.$rows['venta_codigo'].'">
+                                    <i class="fas fa-receipt fa-fw" style="color: black;"></i>
+                                </button>';
+                }
+            } else {
+                $tabla .= '<button type="button" class="btn btn-info btn-sale-options" disabled data-toggle="popover" data-trigger="hover" title="No disponible" data-content="No disponible para ventas pendientes">
+                                <i class="fas fa-file-invoice-dollar fa-fw"></i>
+                            </button>';
+                if ($_SESSION['cargo_svi'] == "Administrador") {
+                    $tabla .= '<button type="button" class="btn btn-info btn-sale-options" disabled data-toggle="popover" data-trigger="hover" title="No disponible" data-content="No disponible para ventas pendientes">
+                                    <i class="fas fa-receipt fa-fw" style="color: black;"></i>
+                                </button>';
+                }
+            }
+
+            // Formulario para eliminar venta (solo administradores)
             if($_SESSION['cargo_svi'] == "Administrador"){
                 $tabla .= '<form class="FormularioAjax" action="'.SERVERURL.'ajax/ventaAjax.php" method="POST" data-form="delete" enctype="multipart/form-data" autocomplete="off">
                                 <input type="hidden" name="venta_codigo_del" value="'.mainModel::encryption($rows['venta_codigo']).'">
@@ -1714,16 +1583,24 @@ if ($_SESSION['cargo_svi'] == "Administrador") {
                                 <button type="submit" class="btn btn-warning btn-sale-options" data-toggle="popover" data-trigger="hover" title="Eliminar venta Nro. '.$rows['venta_id'].'" data-content="CÓDIGO: '.$rows['venta_codigo'].'">
                                     <i class="far fa-trash-alt"></i>
                                 </button>
-                            </form>'; }
-                            $tabla .= '<td><div class="class="btn btn-warning btn-sale-options">
-    <select class="form-control form-control-sm" onchange="actualizarEstadoFactura(this, ' . $rows['venta_id'] . ')">
-        <option value="No Facturado" ' . ($rows['venta_estado'] != 'Impreso' ? 'selected' : '') . '>No Facturado</option>
-        <option value="Facturado" ' . ($rows['venta_estado'] == 'Impreso' ? 'selected' : '') . '>Facturado</option>
-    </select>
-</td>';
+                            </form>';
+            }
+
+            // Selector para cambiar estado de factura solo si no está pendiente
             $tabla .= '</div>
-                        </td>
-                    </tr>';
+                        </td>';
+            $tabla .= '<td>';
+            if($rows['venta_estado'] != 'Pendiente'){
+                $tabla .= '<select class="form-control form-control-sm" onchange="actualizarEstadoFactura(this, ' . $rows['venta_id'] . ')">
+                                <option value="No Facturado" ' . ($rows['venta_estado'] != 'Impreso' ? 'selected' : '') . '>No Facturado</option>
+                                <option value="Facturado" ' . ($rows['venta_estado'] == 'Impreso' ? 'selected' : '') . '>Facturado</option>
+                            </select>';
+            } else {
+                $tabla .= 'No disponible para ventas pendientes';
+            }
+            $tabla .= '</td>';
+
+            $tabla .= '</tr>';
             $contador++;
         }
         $pag_final = $contador - 1;
@@ -1758,6 +1635,10 @@ if ($_SESSION['cargo_svi'] == "Administrador") {
 
     return $tabla;
 }
+
+/*-- Fin controlador --*/
+
+
 
 
 
@@ -2225,5 +2106,6 @@ if ($_SESSION['cargo_svi'] == "Administrador") {
     
             return mainModel::sweet_alert($alerta);
         }
+        
     }
     

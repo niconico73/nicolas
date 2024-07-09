@@ -41,7 +41,6 @@
         </li>
     </ul>	
 
-
 <div class="container-fluid">
 <?php
 // Verifica si la sesión no está activa

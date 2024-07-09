@@ -104,8 +104,9 @@ include "./vistas/inc/admin_security.php";
                     </div>
                     <div class="col-12">
                         <p class="text-center" style="margin-top: 40px;">
-                            <button type="button" class="btn btn-raised btn-info" onclick="generar_reporte()"><i class="far fa-file-pdf"></i> &nbsp; GENERAR REPORTE DE VENTA</button>
+                            <button type="button" class="btn btn-raised btn-info" onclick="generar_reporte()"><i class="far fa-file-pdf" ></i> &nbsp; GENERAR REPORTE DE VENTA</button>
                             <button type="button" class="btn btn-raised btn-success" onclick="generar_reporte_totales()"><i class="far fa-file-pdf"></i> &nbsp; GENERAR REPORTE DE PRODUCTOS</button>
+                            <button type="button" class="btn btn-raised btn-success" onclick="generar_reporte_pendientes()"><i class="far fa-file-pdf"></i> &nbsp; REPORTE DE VENTAS PENDIENTES</button>
                         </p>
                     </div>
                 </div>
@@ -138,6 +139,48 @@ function generar_reporte() {
             if (fecha_inicio && fecha_final) {
                 // Construir URL basada en la selección de usuario
                 let url = "<?php echo SERVERURL; ?>pdf/report-sales.php";
+                if (usuario !== "") {
+                    url += "?usuario=" + encodeURIComponent(usuario);
+                }
+                url += "&fi=" + fecha_inicio + "&ff=" + fecha_final;
+
+                // Abrir en una nueva ventana
+                window.open(url, 'Imprimir reporte de ventas', 'width=820,height=720,top=0,left=100,menubar=NO,toolbar=YES');
+            } else {
+                Swal.fire({
+                    title: 'Ocurrió un error inesperado',
+                    text: 'Debe proporcionar la fecha de inicio y final para generar el reporte.',
+                    type: 'error',
+                    confirmButtonText: 'Aceptar'
+                });
+            }
+        }
+    });
+}
+
+function generar_reporte_pendientes() {
+    Swal.fire({
+        title: '¿Quieres generar el reporte?',
+        text: "La generación del reporte PDF puede tardar unos minutos para completarse",
+        type: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Si, generar',
+        cancelButtonText: 'No, cancelar'
+    }).then((result) => {
+        if (result.value) {
+            let usuario = document.querySelector('#usuario_id').value;
+            let fecha_inicio = document.querySelector('#fecha_inicio').value; // Corregido
+            let fecha_final = document.querySelector('#fecha_final').value;   // Corregido
+
+            usuario = usuario.trim();
+            fecha_inicio = fecha_inicio.trim();
+            fecha_final = fecha_final.trim();
+
+            if (fecha_inicio && fecha_final) {
+                // Construir URL basada en la selección de usuario
+                let url = "<?php echo SERVERURL; ?>pdf/report-sales-pendientes.php";
                 if (usuario !== "") {
                     url += "?usuario=" + encodeURIComponent(usuario);
                 }
